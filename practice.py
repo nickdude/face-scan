@@ -452,6 +452,7 @@ def handle_message(data):
                         i += 1
 
                 os.remove(f'./{socket_id}/{filename}')
+                emit("message_received")
 
 
 
