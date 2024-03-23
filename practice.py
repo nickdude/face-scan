@@ -405,125 +405,6 @@ def read_png_frames(folder_path):
     return frames
 
 
-def file_operations(socket_id):
-
-    curr_directory = f'./{socket_id}'
-
-    files = sorted(os.listdir(curr_directory))
-    identifier = "faceScanImageSeparationIdentifier"
-
-    i = 0
-    for filename in files:
-        if filename.endswith('.txt'):
-            with open(os.path.join(curr_directory, filename), 'r') as file:
-                contents = file.read()
-
-                # gettting the filename witout the .txt
-                name, _ = os.path.splitext(filename)
-
-                # slicing to only get the b64 string (image) and not the identifier txt
-                base64_image_string = contents[len(name) + len(identifier):]
-
-                image_data = base64.b64decode(base64_image_string)
-                with open(f'./{socket_id}/output_image{i}.png', 'wb') as file:
-                    file.write(image_data)
-                    i += 1
-
-            os.remove(f'./{socket_id}/{filename}')
-
-    frames = read_png_frames(curr_directory)
-    _, frames = get_ROI(frames)
-
-    sampling_rate = 30
-    wave = POS_WANG(frames, sampling_rate)
-
-    heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
-    
-    ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
-    
-    sysbp, diabp, spo2 = pred_adv(wave)
-
-    age = 21
-    gender = 0
-    weight = 71
-    height = 172
-
-
-
-    vo2max = calculate_cardio_fit(age,heart_rate_bpm)
-
-    [mhr, hrr, thr, co, map, 
-     hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
-
-
-    si = calculate_Stress_Index(wave, sampling_rate)
-
-    print({
-            'hr': str(heart_rate_bpm),  
-            "ibi": str(ibi), 
-            "sdnn": str(sdnn), 
-            "rmssd": str(rmssd), 
-            "pnn20": str(pnn20), 
-            "pnn50": str(pnn50), 
-            "hrv": str(hrv), 
-            "rr": str(rr), 
-            "sysbp": str(sysbp[0, 0]), 
-            "diabp": str(diabp[0,0]), 
-            "spo2": str(spo2),
-            "vo2max": str(vo2max), 
-            "si": str(si), 
-            "mhr": str(mhr), 
-            "hrr": str(hrr), 
-            "thr": str(thr), 
-            "co": str(co), 
-            "map": str(map), 
-            "hu": str(hu), 
-            "bv": str(bv), 
-            "tbw": str(tbw), 
-            "bwp": str(bwp), 
-            "bmi": str(bmi), 
-            "bf": str(bf), 
-          
-        })
-    
-    
-    if socket_id in connected_clients:
-
-      emit('results', json.dumps(
-        {
-              'hr': str(heart_rate_bpm),  
-              "ibi": str(ibi), 
-              "sdnn": str(sdnn), 
-              "rmssd": str(rmssd), 
-              "pnn20": str(pnn20), 
-              "pnn50": str(pnn50), 
-              "hrv": str(hrv), 
-              "rr": str(rr), 
-              "sysbp": str(sysbp[0, 0]), 
-              "diabp": str(diabp[0,0]), 
-              "spo2": str(spo2),
-              "vo2max": str(vo2max), 
-              "si": str(si), 
-              "mhr": str(mhr), 
-              "hrr": str(hrr), 
-              "thr": str(thr), 
-              "co": str(co), 
-              "map": str(map), 
-              "hu": str(hu),
-              "bv": str(bv), 
-              "tbw": str(tbw), 
-              "bwp": str(bwp), 
-              "bmi": str(bmi), 
-              "bf": str(bf), 
-            
-          }))
-      return
-    else:
-      print("socket id not found in connected clients")
-      print(connected_clients)
-      return
-
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -552,7 +433,118 @@ def handle_message(data):
               f.write(data)
 
       if "899.txt" in get_txt_filenames(f'./{socket_id}'):
-        file_operations(f'./{socket_id}')
+        curr_directory = f'./{socket_id}'
+
+        files = sorted(os.listdir(curr_directory))
+        identifier = "faceScanImageSeparationIdentifier"
+
+        i = 0
+        for filename in files:
+            if filename.endswith('.txt'):
+                with open(os.path.join(curr_directory, filename), 'r') as file:
+                    contents = file.read()
+
+                    # gettting the filename witout the .txt
+                    name, _ = os.path.splitext(filename)
+
+                    # slicing to only get the b64 string (image) and not the identifier txt
+                    base64_image_string = contents[len(name) + len(identifier):]
+
+                    image_data = base64.b64decode(base64_image_string)
+                    with open(f'./{socket_id}/output_image{i}.png', 'wb') as file:
+                        file.write(image_data)
+                        i += 1
+
+                os.remove(f'./{socket_id}/{filename}')
+
+
+
+        # running algorithm related operations
+        frames = read_png_frames(curr_directory)
+        _, frames = get_ROI(frames)
+
+        sampling_rate = 30
+        wave = POS_WANG(frames, sampling_rate)
+
+        heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
+        ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
+        sysbp, diabp, spo2 = pred_adv(wave)
+
+        age = 21
+        gender = 0
+        weight = 71
+        height = 172
+
+        vo2max = calculate_cardio_fit(age,heart_rate_bpm)
+        [mhr, hrr, thr, co, map, 
+        hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
+        si = calculate_Stress_Index(wave, sampling_rate)
+
+        print({
+                'hr': str(heart_rate_bpm),  
+                "ibi": str(ibi), 
+                "sdnn": str(sdnn), 
+                "rmssd": str(rmssd), 
+                "pnn20": str(pnn20), 
+                "pnn50": str(pnn50), 
+                "hrv": str(hrv), 
+                "rr": str(rr), 
+                "sysbp": str(sysbp[0, 0]), 
+                "diabp": str(diabp[0,0]), 
+                "spo2": str(spo2),
+                "vo2max": str(vo2max), 
+                "si": str(si), 
+                "mhr": str(mhr), 
+                "hrr": str(hrr), 
+                "thr": str(thr), 
+                "co": str(co), 
+                "map": str(map), 
+                "hu": str(hu), 
+                "bv": str(bv), 
+                "tbw": str(tbw), 
+                "bwp": str(bwp), 
+                "bmi": str(bmi), 
+                "bf": str(bf), 
+              
+            })
+        
+        
+        print(f'Connected clients are {connected_clients}')
+        if socket_id in connected_clients:
+
+          emit('results', json.dumps(
+            {
+                  'hr': str(heart_rate_bpm),  
+                  "ibi": str(ibi), 
+                  "sdnn": str(sdnn), 
+                  "rmssd": str(rmssd), 
+                  "pnn20": str(pnn20), 
+                  "pnn50": str(pnn50), 
+                  "hrv": str(hrv), 
+                  "rr": str(rr), 
+                  "sysbp": str(sysbp[0, 0]), 
+                  "diabp": str(diabp[0,0]), 
+                  "spo2": str(spo2),
+                  "vo2max": str(vo2max), 
+                  "si": str(si), 
+                  "mhr": str(mhr), 
+                  "hrr": str(hrr), 
+                  "thr": str(thr), 
+                  "co": str(co), 
+                  "map": str(map), 
+                  "hu": str(hu),
+                  "bv": str(bv), 
+                  "tbw": str(tbw), 
+                  "bwp": str(bwp), 
+                  "bmi": str(bmi), 
+                  "bf": str(bf), 
+                
+              }))
+          return
+        else:
+          print("socket id not found in connected clients")
+          print(connected_clients)
+          return
       
       
       #TODO: handle else statement, send error that process failed, internal reason: 900 frames (30 seconds video) not received 
