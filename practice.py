@@ -245,7 +245,7 @@ def _process_video(frames):
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", pingTimeout=60000, pingInterval=20000)
 
 
 
@@ -404,11 +404,6 @@ def read_png_frames(folder_path):
             pass
 
     return frames
-
-
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 # write in separate files
 @socketio.on('message')
