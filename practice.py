@@ -420,6 +420,7 @@ def handle_message(data):
       iteration_number = str(data[:identifier_index])
 
       print(f'Iteration {iteration_number} for client {socket_id}')
+      emit("message_received")
 
       # make directory for file operations for that particular client
       if not os.path.exists(f'./{socket_id}'):
@@ -452,7 +453,6 @@ def handle_message(data):
                         i += 1
 
                 os.remove(f'./{socket_id}/{filename}')
-                emit("message_received")
 
 
 
