@@ -28,6 +28,8 @@ from scipy import signal
 from scipy import linalg
 from scipy import signal
 from scipy import sparse
+from scipy import stats
+from scipy import integrate
 from scipy import io as sci
 from scipy import stats as st
 from imutils import face_utils
@@ -48,6 +50,8 @@ import dlib
 import numpy as np
 import pandas as pd
 import heartpy as hp
+import PyEMD
+import neurokit2 as nk
 
 from scipy import signal, sparse
 from imutils import face_utils
@@ -77,11 +81,6 @@ dependencies = {
 model_bp = ks.models.load_model('./resnet_ppg_nonmixed.h5', custom_objects=dependencies)
 
 model_spo2 = tf.keras.models.load_model('./bidmc_hr_FCN_Residual_huber_loss.h5')
-
-
-
-
-
 
 
 #********************************************************************************#
@@ -215,9 +214,174 @@ def calculate_Stress_Index(wave,sampling_rate):
     SI = amplitude / (2 * mode_50ms) * 3.92 * sdnn
     return SI
 
+#***********    ASTHAMA CODE    *********************************************************************#
+
+
+# clf_asth = lightgbm.Booster(model_file='/content/lgbr_cust_slicegtppg_91.txt')
+
+def find_dominant_frequencies(IMFs, sampling_rate):
+    n_imfs, n_samples = IMFs.shape
+    frequencies = np.fft.rfftfreq(n_samples, d=1/sampling_rate)
+    dominant_frequencies = []
+    for imf in IMFs:
+        windowed_imf = imf * np.hanning(n_samples)
+        fft_values = np.fft.rfft(windowed_imf)
+        magnitude = np.abs(fft_values)
+        positive_frequencies = frequencies
+        positive_magnitude = magnitude
+        dominant_frequency_index = np.argmax(positive_magnitude[1:]) + 1
+        dominant_frequency = positive_frequencies[dominant_frequency_index]
+        dominant_frequencies.append(dominant_frequency)
+    return dominant_frequencies
+
+def filter_respiratory_IMFs(dominant_frequencies, lower_bound=0.1, upper_bound=0.7):
+      respiratory_IMFs_indices = [i for i, freq in enumerate(dominant_frequencies) if lower_bound <= freq <= upper_bound]
+      if len(respiratory_IMFs_indices)<1:
+        respiratory_IMFs_indices = [i for i, freq in enumerate(dominant_frequencies) if 0.015 <= freq <= 0.9]
+      return respiratory_IMFs_indices
+
+def get_respirate_CEEMDAN_PCA(wave):
+  ceemdan = PyEMD.CEEMDAN(parallel=True, processes=6)
+  ceemdan.noise_seed(seed=2009)
+  imfs = ceemdan(wave)
+  num_imfs, length = imfs.shape
+
+  IMFs = imfs
+  sampling_rate = 30  # Hz
+  n_imfs, n_samples = IMFs.shape
+
+  dominant_frequencies = find_dominant_frequencies(IMFs, sampling_rate)
+  respiratory_IMFs_indices = filter_respiratory_IMFs(dominant_frequencies)
+
+  if len(respiratory_IMFs_indices)>1:
+    temp_pca = np.array(respiratory_IMFs_indices)
+    temp_pca_max = (temp_pca.max()+1)
+    temp_pca_min = temp_pca.min()
+    #print(temp_pca_min,temp_pca_max)
+    selected_MRIs = imfs[temp_pca_min:temp_pca_max, :]
+    #print(selected_MRIs)
+    pca = PCA(n_components=1)
+    PC1 = pca.fit_transform(selected_MRIs.T).flatten()
+    respiratory_wave = PC1
+  elif len(respiratory_IMFs_indices)==1:
+    respiratory_wave = imfs[respiratory_IMFs_indices[0],:]
+  else:
+    respiratory_IMFs_indices = np.argmax(dominant_frequencies)
+    respiratory_wave = imfs[respiratory_IMFs_indices,:]
+  return respiratory_wave
+#-------------------------------------------------------------------------------
+
+def calc_ins_exp(normalized_signal,start_inspiration,end_inspiration,start_expiration,end_expiration):
+  expi2 = stats.skew(normalized_signal[start_expiration:end_expiration], axis=0, bias=True, nan_policy='propagate', keepdims=False)
+  inspi2 = stats.skew(normalized_signal[start_inspiration:end_inspiration], axis=0, bias=True, nan_policy='propagate', keepdims=False)
+  skew_ratio = round((expi2/inspi2),6)
+
+
+  time = np.array(list(range(len(normalized_signal))))
+  amplitude = normalized_signal
+  inspiration_area = integrate.trapz(amplitude[start_inspiration:end_inspiration], time[start_inspiration:end_inspiration])
+  expiration_area = integrate.trapz(amplitude[start_expiration:end_expiration], time[start_expiration:end_expiration])
+  area_ratio = round((expiration_area / inspiration_area),6)
+
+  inspiration_time = (time[end_inspiration]-time[start_inspiration])/30
+  expiration_time = (time[end_expiration]-time[start_expiration])/30
+  time_ratio = round((expiration_time/inspiration_time),6)
+
+  return skew_ratio,area_ratio,time_ratio
+
+def respi_featext_II(b):
+  signal2 = b
+  peak_signal, info = nk.rsp_peaks(signal2,sampling_rate=30,method="khodadad2018", amplitude_min=0.15)
+  min_value = np.min(signal2)
+  max_value = np.max(signal2)
+  normalized_signal = (signal2 - min_value) / (max_value - min_value)
+  normalized_signal = np.array(normalized_signal)
+
+  q=np.array(peak_signal['RSP_Peaks'])
+  q2=np.where(q==1)
+  qi=np.array(peak_signal['RSP_Troughs'])
+  q2i=np.where(qi==1)
+  q2,q2i
+
+  inspiration = np.full(len(normalized_signal), np.nan)
+  inspiration[q2] = 1.0
+  inspiration[q2i] = 0.0
+
+  troughs0=np.where(inspiration==0)
+  peaks0=np.where(inspiration==1)
+
+  if len(troughs0[0])<len(peaks0[0]):
+    diff=len(peaks0[0]-troughs0[0])
+    peaks0[0]=peaks0[0][:len(troughs0[0])]
+  elif len(troughs0[0])>len(peaks0[0]):
+    diff=len(troughs0[0]-peaks0[0])
+    if diff==1:
+      pass
+    elif diff>1:
+      troughs0[0]=troughs0[0][:len(peaks0[0])+1]
+  else:
+    pass
+
+  skew_total, area_total, time_total = [], [], []
+
+  for i in range(len(peaks0[0])):
+    inspi_start = troughs0[0][i]
+    inspi_end, expi_start = peaks0[0][i], peaks0[0][i]
+    if len(troughs0[0])>len(peaks0[0]) or i<len(peaks0[0])-1:
+      expi_end = troughs0[0][i+1]
+      buffer_oe =  expi_end-expi_start
+    elif i==len(peaks0[0])-1:
+      expi_end = expi_start+buffer_oe
+      if expi_end>len(normalized_signal):
+        expi_end=len(normalized_signal)-2
+
+    skew_ratio, area_ratio, time_ratio = calc_ins_exp(normalized_signal,inspi_start,inspi_end,expi_start,expi_end)
+    skew_total.append(skew_ratio)
+    area_total.append(area_ratio)
+    time_total.append(time_ratio)
+
+  skew_total = np.array(skew_total).mean()
+  area_total = np.array(area_total).mean()
+  time_total = np.array(time_total).mean()
+
+  if math.isnan(skew_total) or math.isnan(area_total) or math.isnan(time_total) :
+    return 999,999,999,999
+  skew_total = round(skew_total,5)
+  area_total = round(area_total,5)
+  time_total = round(time_total,5)
+
+  sig_kurtosis = stats.kurtosis(normalized_signal, axis=0, fisher=False, bias=True, nan_policy='propagate', keepdims=False)
+  sig_kurtosis = round(sig_kurtosis,5)
+
+  return sig_kurtosis,skew_total,area_total,time_total
+
+
+def get_asthama_riskscore(ppg_wave):
+  global clf_asth
+  respi_wave = get_respirate_CEEMDAN_PCA(ppg_wave)
+  tt_kurtosis, tt_skewr, tt_area, tt_time = respi_featext_II(respi_wave)
+  if tt_kurtosis==999 or tt_skewr==999:
+    y_pred_proba = 10
+  else:
+    ip_sample = []
+    ip_sample.append(tt_kurtosis)
+    ip_sample.append(tt_skewr)
+    ip_sample.append(tt_area)
+    ip_sample.append(tt_time)
+    for i in range(len(respi_wave)):
+      ip_sample.append(respi_wave[i])
+    if len(ip_sample)>904:
+      ip_sample=ip_sample[0:904]
+    elif len(ip_sample)<904:
+      padding_size = 904-len(ip_sample)
+      ip_sample=np.pad(ip_sample, (0, padding_size), mode='constant', constant_values=0)
+    ip_sample=np.array(ip_sample).reshape(1,len(ip_sample))
+    score_temp = clf_asth.predict(ip_sample, raw_score=False, pred_leaf=False, pred_contrib=False)
+    y_pred_proba = (round(score_temp[0]*100,4))
+  return y_pred_proba
+
+
 #********************************************************************************#
-
-
 
 
 
@@ -537,6 +701,12 @@ def handle_message(data):
                   "bf": str(bf), 
                 
               }))
+          
+          try:
+            # delete user directory after calculation done
+            os.rmdir(f'./{socket_id}')
+          except:
+            pass
           return
         else:
           print("socket id not found in connected clients")
@@ -554,9 +724,6 @@ def get_txt_filenames(directory):
         if filename.endswith('.txt'):
             txt_files.append(filename)
     return txt_files
-
-
-
 
 
 @socketio.on("message_end")
