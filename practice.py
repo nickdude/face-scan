@@ -1,4 +1,5 @@
 import time
+import shutil
 import json
 from gevent.pywsgi import WSGIServer
 from flask import Flask, render_template, request
@@ -177,7 +178,7 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
 
 
 
-    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP), str(Mean_Arterial_Pressure)
+    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0])
             , str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
 
     # print('Maximum Heart Rate:'+str(HR_MAX)+' bpm')
@@ -642,30 +643,30 @@ def handle_message(data):
         si = calculate_Stress_Index(wave, sampling_rate)
 
         print({
-                'hr': str(heart_rate_bpm),  
-                "ibi": str(ibi), 
-                "sdnn": str(sdnn), 
-                "rmssd": str(rmssd), 
-                "pnn20": str(pnn20), 
-                "pnn50": str(pnn50), 
-                "hrv": str(hrv), 
-                "rr": str(rr), 
-                "sysbp": str(sysbp[0, 0]), 
-                "diabp": str(diabp[0,0]), 
-                "spo2": str(spo2),
-                "vo2max": str(vo2max), 
-                "si": str(si), 
-                "mhr": str(mhr), 
-                "hrr": str(hrr), 
-                "thr": str(thr), 
-                "co": str(co), 
-                "map": str(map), 
-                "hu": str(hu), 
-                "bv": str(bv), 
-                "tbw": str(tbw), 
-                "bwp": str(bwp), 
-                "bmi": str(bmi), 
-                "bf": str(bf), 
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi)), 1), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2[0 ,0])),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co), 1)),
+                "map": (round(float(map), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": (bv), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
               
             })
         
@@ -675,43 +676,43 @@ def handle_message(data):
 
           emit('results', json.dumps(
             {
-                  'hr': str(heart_rate_bpm),  
-                  "ibi": str(ibi), 
-                  "sdnn": str(sdnn), 
-                  "rmssd": str(rmssd), 
-                  "pnn20": str(pnn20), 
-                  "pnn50": str(pnn50), 
-                  "hrv": str(hrv), 
-                  "rr": str(rr), 
-                  "sysbp": str(sysbp[0, 0]), 
-                  "diabp": str(diabp[0,0]), 
-                  "spo2": str(spo2),
-                  "vo2max": str(vo2max), 
-                  "si": str(si), 
-                  "mhr": str(mhr), 
-                  "hrr": str(hrr), 
-                  "thr": str(thr), 
-                  "co": str(co), 
-                  "map": str(map), 
-                  "hu": str(hu),
-                  "bv": str(bv), 
-                  "tbw": str(tbw), 
-                  "bwp": str(bwp), 
-                  "bmi": str(bmi), 
-                  "bf": str(bf), 
-                
-              }))
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi)), 1), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2[0 ,0])),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co), 1)),
+                "map": (round(float(map), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": (bv), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+              
+            }))
           
           try:
-            # delete user directory after calculation done
-            os.rmdir(f'./{socket_id}')
-          except:
-            pass
-          return
+            shutil.rmtree(f'./{socket_id}')
+            print(f"Directory deleted successfully for client -> {socket_id}")
+          except OSError as e:
+              print(f"Error deleting directory for client -> {socket_id} : {e}")
         else:
-          print("socket id not found in connected clients")
-          print(connected_clients)
           return
+
+      else:
+        emit("disconnect", {"op_status": -3, "reason": "900 frames weren't received"})
       
       
       #TODO: handle else statement, send error that process failed, internal reason: 900 frames (30 seconds video) not received 
@@ -760,5 +761,5 @@ if __name__ == '__main__':
 
     
     # socketio.run(app, host="0.0.0.0", port=5000)
-    http_server = WSGIServer(('', 5000), app)
+    http_server = WSGIServer(('', 5001), app)
     http_server.serve_forever()
