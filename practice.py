@@ -570,133 +570,6 @@ def read_png_frames(folder_path):
 
     return frames
   
-  
-  
-  
-def write_socket_data(socket_id, iteration_number, data):
-  with open(f'./{socket_id}/{iteration_number}.txt', '+a') as f:
-              f.write(data)
-
-  if "899.txt" in get_txt_filenames(f'./{socket_id}'):
-    curr_directory = f'./{socket_id}'
-
-    files = sorted(os.listdir(curr_directory))
-    identifier = "faceScanImageSeparationIdentifier"
-
-    i = 0
-    for filename in files:
-        if filename.endswith('.txt'):
-            with open(os.path.join(curr_directory, filename), 'r') as file:
-                contents = file.read()
-
-                # gettting the filename witout the .txt
-                name, _ = os.path.splitext(filename)
-
-                # slicing to only get the b64 string (image) and not the identifier txt
-                base64_image_string = contents[len(name) + len(identifier):]
-
-                image_data = base64.b64decode(base64_image_string)
-                with open(f'./{socket_id}/output_image{i}.png', 'wb') as file:
-                    file.write(image_data)
-                    i += 1
-
-            os.remove(f'./{socket_id}/{filename}')
-
-
-
-    # running algorithm related operations
-    frames = read_png_frames(curr_directory)
-    _, frames = get_ROI(frames)
-
-    sampling_rate = 30
-    wave = POS_WANG(frames, sampling_rate)
-
-    heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
-    ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
-    sysbp, diabp, spo2 = pred_adv(wave)
-
-    age = 21
-    gender = 0
-    weight = 71
-    height = 172
-
-    vo2max = calculate_cardio_fit(age,heart_rate_bpm)
-    [mhr, hrr, thr, co, map, 
-    hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
-    si = calculate_Stress_Index(wave, sampling_rate)
-
-    print({
-            'hr': (math.floor(heart_rate_bpm)),  
-            "ibi": (round(float(ibi)), 1), 
-            "sdnn": (round(float(sdnn), 1)), 
-            "rmssd": (round(float(rmssd), 1)), 
-            "pnn20": (round(float(pnn20) * 100, 1)), 
-            "pnn50": (round(float(pnn50) * 100, 1)), 
-            "hrv": (hrv),
-            "rr": (round(float(rr), 2)), 
-            "sysbp": (math.floor(sysbp[0, 0])), 
-            "diabp": (math.floor(diabp[0,0])), 
-            "spo2": (math.floor(spo2[0 ,0])),
-            "vo2max": (round(vo2max, 1)), 
-            "si": (round(si, 1)), 
-            "mhr": (math.floor(float(mhr))), 
-            "hrr": (math.floor(float(hrr))), 
-            "thr": (math.floor(float(thr))), 
-            "co": (round(float(co), 1)),
-            "map": (round(float(map), 1)), 
-            "hu": (round(float(hu), 1)), 
-            "bv": (bv), 
-            "tbw": (float(tbw)), 
-            "bwp": (round(float(bwp), 1)), 
-            "bmi": (round(float(bmi), 1)), 
-            "bf": (round(float(bf), 1)), 
-          
-        })
-    
-    
-    print(f'Connected clients are {connected_clients}')
-    if socket_id in connected_clients:
-
-      emit('results', json.dumps(
-        {
-            'hr': (math.floor(heart_rate_bpm)),  
-            "ibi": (round(float(ibi)), 1), 
-            "sdnn": (round(float(sdnn), 1)), 
-            "rmssd": (round(float(rmssd), 1)), 
-            "pnn20": (round(float(pnn20) * 100, 1)), 
-            "pnn50": (round(float(pnn50) * 100, 1)), 
-            "hrv": (hrv),
-            "rr": (round(float(rr), 2)), 
-            "sysbp": (math.floor(sysbp[0, 0])), 
-            "diabp": (math.floor(diabp[0,0])), 
-            "spo2": (math.floor(spo2[0 ,0])),
-            "vo2max": (round(vo2max, 1)), 
-            "si": (round(si, 1)), 
-            "mhr": (math.floor(float(mhr))), 
-            "hrr": (math.floor(float(hrr))), 
-            "thr": (math.floor(float(thr))), 
-            "co": (round(float(co), 1)),
-            "map": (round(float(map), 1)), 
-            "hu": (round(float(hu), 1)), 
-            "bv": (bv), 
-            "tbw": (float(tbw)), 
-            "bwp": (round(float(bwp), 1)), 
-            "bmi": (round(float(bmi), 1)), 
-            "bf": (round(float(bf), 1)), 
-          
-        }))
-      
-      try:
-        shutil.rmtree(f'./{socket_id}')
-        print(f"Directory deleted successfully for client -> {socket_id}")
-      except OSError as e:
-          print(f"Error deleting directory for client -> {socket_id} : {e}")
-    else:
-      return
-
-  # else:
-  #   emit("disconnect", {"op_status": -3, "reason": "900 frames weren't received"})
-  
 
 # write in separate files
 @socketio.on('message')
@@ -718,12 +591,129 @@ def handle_message(data):
       # make directory for file operations for that particular client
       if not os.path.exists(f'./{socket_id}'):
         os.mkdir(f'{socket_id}')
-        
-        
-      thread = threading.Thread(target=write_socket_data, args=(socket_id, iteration_number, data))
-      thread.start()
 
-      
+      with open(f'./{socket_id}/{iteration_number}.txt', '+a') as f:
+              f.write(data)
+
+      if "899.txt" in get_txt_filenames(f'./{socket_id}'):
+        curr_directory = f'./{socket_id}'
+
+        files = sorted(os.listdir(curr_directory))
+        identifier = "faceScanImageSeparationIdentifier"
+
+        i = 0
+        for filename in files:
+            if filename.endswith('.txt'):
+                with open(os.path.join(curr_directory, filename), 'r') as file:
+                    contents = file.read()
+
+                    # gettting the filename witout the .txt
+                    name, _ = os.path.splitext(filename)
+
+                    # slicing to only get the b64 string (image) and not the identifier txt
+                    base64_image_string = contents[len(name) + len(identifier):]
+
+                    image_data = base64.b64decode(base64_image_string)
+                    with open(f'./{socket_id}/output_image{i}.png', 'wb') as file:
+                        file.write(image_data)
+                        i += 1
+
+                os.remove(f'./{socket_id}/{filename}')
+
+
+
+        # running algorithm related operations
+        frames = read_png_frames(curr_directory)
+        _, frames = get_ROI(frames)
+
+        sampling_rate = 30
+        wave = POS_WANG(frames, sampling_rate)
+
+        heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
+        ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
+        sysbp, diabp, spo2 = pred_adv(wave)
+
+        age = 21
+        gender = 0
+        weight = 71
+        height = 172
+
+        vo2max = calculate_cardio_fit(age,heart_rate_bpm)
+        [mhr, hrr, thr, co, map, 
+        hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
+        si = calculate_Stress_Index(wave, sampling_rate)
+
+        print({
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi)), 1), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2[0 ,0])),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co), 1)),
+                "map": (round(float(map), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": (bv), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+              
+            })
+        
+        
+        print(f'Connected clients are {connected_clients}')
+        if socket_id in connected_clients:
+
+          emit('results', json.dumps(
+            {
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi)), 1), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2[0 ,0])),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co), 1)),
+                "map": (round(float(map), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": (bv), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+              
+            }))
+          
+          try:
+            shutil.rmtree(f'./{socket_id}')
+            print(f"Directory deleted successfully for client -> {socket_id}")
+          except OSError as e:
+              print(f"Error deleting directory for client -> {socket_id} : {e}")
+        else:
+          return
+
+      else:
+        emit("disconnect", {"op_status": -3, "reason": "900 frames weren't received"})
       
       
       #TODO: handle else statement, send error that process failed, internal reason: 900 frames (30 seconds video) not received 
