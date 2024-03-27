@@ -1,3 +1,15 @@
+import base64
+import os
+import json
+import time
+from flask import Flask, request, jsonify
+from flask_restful import http_status_message
+import re
+import cv2
+import dlib
+import keras as ks
+import tensorflow as tf
+
 import time
 import shutil
 import json
@@ -65,14 +77,9 @@ import tensorflow as tf
 import lightgbm
 
 
+app = Flask(__name__)
 
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor('dlib_shape_predictor_68_face_landmarks.dat')
-
-
-# DIRECTORY = './'
-
-connected_clients = []
+################################################
 
 dependencies = {
         'ReLU': ks.layers.ReLU,
@@ -80,6 +87,10 @@ dependencies = {
         'Magnitude': Magnitude,
         'MagnitudeToDecibel': MagnitudeToDecibel
 }
+
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor('dlib_shape_predictor_68_face_landmarks.dat')
+
 model_bp = ks.models.load_model('./resnet_ppg_nonmixed.h5', custom_objects=dependencies)
 
 model_spo2 = tf.keras.models.load_model('./bidmc_hr_FCN_Residual_huber_loss.h5')
@@ -87,7 +98,6 @@ model_spo2 = tf.keras.models.load_model('./bidmc_hr_FCN_Residual_huber_loss.h5')
 clf_asth = lightgbm.Booster(model_file='lgbr_cust_slicegtppg_91.txt')
 
 
-#********************************************************************************#
 
 def calc_hr_hp(wave,sampling_rate=30):
   wd1,m1=hp.process(wave, sampling_rate, report_time = False)
@@ -552,6 +562,8 @@ def get_ROI(frames):
   return v_fps,collection_frames_fin
 
 
+################################################
+
 def read_png_frames(folder_path):
     # Get all PNG files and sort them by the numeric part of the filename
     png_files = sorted([file for file in os.listdir(folder_path) if file.endswith('.png')],
@@ -571,201 +583,182 @@ def read_png_frames(folder_path):
             pass
 
     return frames
-  
 
-# write in separate files
-@socketio.on('message')
-def handle_message(data):
-  
-  
-    socket_id = request.sid
+def reorder_files(userSessionUID):
+    filenames = os.listdir(f'./{userSessionUID}')
+    # print(filenames)
+    # print(len(filenames))
+    save_sorted_files(filenames, userSessionUID)
     
-    if socket_id in connected_clients:
-      
-      print(f'Streaming started for client {socket_id}')
-      
-      identifier_index = data.find("faceScanImageSeparationIdentifier")
-      iteration_number = str(data[:identifier_index])
 
-      print(f'Iteration {iteration_number} for client {socket_id}')
-      emit("message_received")
-
-      # make directory for file operations for that particular client
-      if not os.path.exists(f'./{socket_id}'):
-        os.mkdir(f'{socket_id}')
-
-      with open(f'./{socket_id}/{iteration_number}.txt', '+a') as f:
-              f.write(data)
-
-      if "899.txt" in get_txt_filenames(f'./{socket_id}'):
-        curr_directory = f'./{socket_id}'
-
-        files = sorted(os.listdir(curr_directory))
-        identifier = "faceScanImageSeparationIdentifier"
-
-        i = 0
-        for filename in files:
-            if filename.endswith('.txt'):
-                with open(os.path.join(curr_directory, filename), 'r') as file:
-                    contents = file.read()
-
-                    # gettting the filename witout the .txt
-                    name, _ = os.path.splitext(filename)
-
-                    # slicing to only get the b64 string (image) and not the identifier txt
-                    base64_image_string = contents[len(name) + len(identifier):]
-
-                    image_data = base64.b64decode(base64_image_string)
-                    with open(f'./{socket_id}/output_image{i}.png', 'wb') as file:
-                        file.write(image_data)
-                        i += 1
-
-                os.remove(f'./{socket_id}/{filename}')
-
-
-
-        # running algorithm related operations
-        frames = read_png_frames(curr_directory)
-        _, frames = get_ROI(frames)
-
-        sampling_rate = 30
-        wave = POS_WANG(frames, sampling_rate)
-
-        heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
-        ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
-        sysbp, diabp, spo2 = pred_adv(wave)
-
-        age = 21
-        gender = 0
-        weight = 71
-        height = 172
-
-        vo2max = calculate_cardio_fit(age,heart_rate_bpm)
-        [mhr, hrr, thr, co, map, 
-        hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
-        si = calculate_Stress_Index(wave, sampling_rate)
-        asth_rs = get_asthama_riskscore(wave)
-
-        print({
-                'hr': (math.floor(heart_rate_bpm)),  
-                "ibi": (round(float(ibi)), 1), 
-                "sdnn": (round(float(sdnn), 1)), 
-                "rmssd": (round(float(rmssd), 1)), 
-                "pnn20": (round(float(pnn20) * 100, 1)), 
-                "pnn50": (round(float(pnn50) * 100, 1)), 
-                "hrv": (hrv),
-                "rr": (round(float(rr), 2)), 
-                "sysbp": (math.floor(sysbp[0, 0])), 
-                "diabp": (math.floor(diabp[0,0])), 
-                "spo2": (math.floor(spo2[0 ,0])),
-                "vo2max": (round(vo2max, 1)), 
-                "si": (round(si, 1)), 
-                "mhr": (math.floor(float(mhr))), 
-                "hrr": (math.floor(float(hrr))), 
-                "thr": (math.floor(float(thr))), 
-                "co": (round(float(co), 1)),
-                "map": (round(float(map), 1)), 
-                "hu": (round(float(hu), 1)), 
-                "bv": (bv), 
-                "tbw": (float(tbw)), 
-                "bwp": (round(float(bwp), 1)), 
-                "bmi": (round(float(bmi), 1)), 
-                "bf": (round(float(bf), 1)), 
-                "asth_risk": round(float(asth_rs),1)
-              
-            })
+def save_sorted_files(filenames, userSessionUID):
+    l = filenames
+    for i in range(len(l)):
+        print(f'\n\nfor filename {l[i]}')
+        pre, post = l[i][12:].split('-')
+        post =  post.split('.')[0]
         
-        
-        print(f'Connected clients are {connected_clients}')
-        if socket_id in connected_clients:
-
-          emit('results', json.dumps(
-            {
-                'hr': (math.floor(heart_rate_bpm)),  
-                "ibi": (round(float(ibi)), 1), 
-                "sdnn": (round(float(sdnn), 1)), 
-                "rmssd": (round(float(rmssd), 1)), 
-                "pnn20": (round(float(pnn20) * 100, 1)), 
-                "pnn50": (round(float(pnn50) * 100, 1)), 
-                "hrv": (hrv),
-                "rr": (round(float(rr), 2)), 
-                "sysbp": (math.floor(sysbp[0, 0])), 
-                "diabp": (math.floor(diabp[0,0])), 
-                "spo2": (math.floor(spo2[0 ,0])),
-                "vo2max": (round(vo2max, 1)), 
-                "si": (round(si, 1)), 
-                "mhr": (math.floor(float(mhr))), 
-                "hrr": (math.floor(float(hrr))), 
-                "thr": (math.floor(float(thr))), 
-                "co": (round(float(co), 1)),
-                "map": (round(float(map), 1)), 
-                "hu": (round(float(hu), 1)), 
-                "bv": (bv), 
-                "tbw": (float(tbw)), 
-                "bwp": (round(float(bwp), 1)), 
-                "bmi": (round(float(bmi), 1)), 
-                "bf": (round(float(bf), 1)), 
-                "asth_risk": round(float(asth_rs),1)
-              
-            }))
-          
-          try:
-            shutil.rmtree(f'./{socket_id}')
-            print(f"Directory deleted successfully for client -> {socket_id}")
-          except OSError as e:
-              print(f"Error deleting directory for client -> {socket_id} : {e}")
+        if int(post) == 100:
+            os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{pre}{post[1:]}.png')
+            print(f'{pre}{post[1:]}.png')
+            
         else:
-          return
-
-      else:
-        emit("disconnect", {"op_status": -3, "reason": "900 frames weren't received"})
-      
-      
-      #TODO: handle else statement, send error that process failed, internal reason: 900 frames (30 seconds video) not received 
-      
-
-
-def get_txt_filenames(directory):
-    txt_files = []
-    for filename in os.listdir(directory):
-        if filename.endswith('.txt'):
-            txt_files.append(filename)
-    return txt_files
-
-
-@socketio.on("message_end")
-def message_end():
-    print('hit message end')
-
-    # x = threading.Thread(target=file_operations)
-    # x.start()
-    # x.join()
+            
+            if len(post) == 1:
+                if (int(pre) - 1) == 0:
+                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(post)}.png')
+                    print(f'{int(post)}.png')
+                else:
+                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(pre) - 1}0{int(post)}.png')
+                    print(f'{int(pre) - 1}0{int(post)}.png')
+                
+            else:
+                if (int(pre) - 1) == 0:
+                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{post}.png')
+                    print(f'{post}.png')
+                    
+                else:
+                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(pre) - 1}{post}.png')
+                    print(f'{int(pre) - 1}{post}.png')
 
 
-@socketio.on('connect')
-def handleConnection():
+@app.route('/', methods=['POST'])
+def receive_list():
+    print('got something')
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            # print(data)
+            # print(len(str(data)))
+            
+            
+            fileName = str(list(data.keys())[0])
+            userSessionUID = fileName[8:]
+            
+            if not os.path.exists(f'./{userSessionUID}'):
+                os.mkdir(f'{userSessionUID}')
+            
+            print(userSessionUID)
+            arrImages = data[f'{fileName}']
+            i = 1
+            for b64ImageString in arrImages:
+                image_data = base64.b64decode(b64ImageString)
+                with open(f'./{userSessionUID}/output_image{fileName[4]}-{i}.png', 'wb') as file:
+                    file.write(image_data)
+                    i += 1
+            
+            if ( 'output_image9-100.png' in os.listdir(f'./{userSessionUID}') ):
+                reorder_files(userSessionUID)
+                
+                frames = read_png_frames(f'./{userSessionUID}')
+                _, frames = get_ROI(frames)
 
+                sampling_rate = 30
+                wave = POS_WANG(frames, sampling_rate)
 
-    socket_id = request.sid
-    print(f"Client {socket_id} connected")
-    connected_clients.append(socket_id)
-    print(connected_clients)
-        
-    
-@socketio.on("disconnect")
-def handleDisconnection():
-    socket_id = request.sid
-    
-    if socket_id in connected_clients:
-      connected_clients.remove(socket_id)
-      print(f'Client {socket_id} disconnected')
-      return 
+                heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
+                ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
+                sysbp, diabp, spo2 = pred_adv(wave)
+
+                age = 21
+                gender = 0
+                weight = 71
+                height = 172
+
+                vo2max = calculate_cardio_fit(age,heart_rate_bpm)
+                [mhr, hrr, thr, co, map, 
+                hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
+                si = calculate_Stress_Index(wave, sampling_rate)
+                asth_rs = get_asthama_riskscore(wave)
+                
+                
+                print({
+                    'hr': (math.floor(heart_rate_bpm)),  
+                    "ibi": (round(float(ibi), 1)), 
+                    "sdnn": (round(float(sdnn), 1)), 
+                    "rmssd": (round(float(rmssd), 1)), 
+                    "pnn20": (round(float(pnn20) * 100, 1)), 
+                    "pnn50": (round(float(pnn50) * 100, 1)), 
+                    "hrv": (hrv),
+                    "rr": (round(float(rr), 2)), 
+                    "sysbp": (math.floor(sysbp[0, 0])), 
+                    "diabp": (math.floor(diabp[0,0])), 
+                    # "spo2": (math.floor(spo2[0 ,0])),
+                    "vo2max": (round(vo2max, 1)), 
+                    "si": (round(si, 1)), 
+                    "mhr": (math.floor(float(mhr))), 
+                    "hrr": (math.floor(float(hrr))), 
+                    "thr": (math.floor(float(thr))), 
+                    "co": (round(float(co), 1)),
+                    "map": (round(float(map), 1)), 
+                    "hu": (round(float(hu), 1)), 
+                    "bv": (bv), 
+                    "tbw": (float(tbw)), 
+                    "bwp": (round(float(bwp), 1)), 
+                    "bmi": (round(float(bmi), 1)), 
+                    "bf": (round(float(bf), 1)), 
+                    "asth_risk": round(float(asth_rs),1)
+                
+                })
+                
+                
+                print(f'SPO2 is {math.floor(spo2[0,0])} and type is {type(math.floor(spo2[0,0]))}')
+                
+                # if client session directory in folder, deleted, else skip
+                if userSessionUID in os.listdir('./'):
+                    try:
+                        shutil.rmtree(f'./{userSessionUID}')
+                        print(f'Client directory removed successfully -> {userSessionUID}')
+                    except:
+                        print(f'Failed to remove client directory -> {userSessionUID}')
+                
+                return json.dumps(
+                    {
+                        'hr': (math.floor(heart_rate_bpm)),  
+                        "ibi": (round(float(ibi)), 1), 
+                        "sdnn": (round(float(sdnn), 1)), 
+                        "rmssd": (round(float(rmssd), 1)), 
+                        "pnn20": (round(float(pnn20) * 100, 1)), 
+                        "pnn50": (round(float(pnn50) * 100, 1)), 
+                        "hrv": (hrv),
+                        "rr": (round(float(rr), 2)), 
+                        "sysbp": (math.floor(sysbp[0, 0])), 
+                        "diabp": (math.floor(diabp[0,0])), 
+                        # "spo2": (math.floor(spo2[0 ,0])),
+                        "spo2": (math.floor(spo2[0,0])),
+                        "vo2max": (round(vo2max, 1)), 
+                        "si": (round(si, 1)), 
+                        "mhr": (math.floor(float(mhr))), 
+                        "hrr": (math.floor(float(hrr))), 
+                        "thr": (math.floor(float(thr))), 
+                        "co": (round(float(co), 1)),
+                        "map": (round(float(map), 1)), 
+                        "hu": (round(float(hu), 1)), 
+                        "bv": (bv), 
+                        "tbw": (float(tbw)), 
+                        "bwp": (round(float(bwp), 1)), 
+                        "bmi": (round(float(bmi), 1)), 
+                        "bf": (round(float(bf), 1)), 
+                        "asth_risk": round(float(asth_rs),1)
+                    
+                    }
+                )
+            
+            # return 200, till all image loads have not been sent to server
+            return json.dumps({"opcode": 200})
+        except Exception as e:
+            print(e)
+            
+            # if client session directory in folder, deleted, else skip
+            if userSessionUID in os.listdir('./'):
+                try:
+                    shutil.rmtree(f'./{userSessionUID}')
+                    print(f'Client directory removed successfully -> {userSessionUID}')
+                except:
+                    print(f'Failed to remove client directory -> {userSessionUID}')
+            return json.dumps({"opcode": 500})
     else:
-      return
+        return jsonify({"error": "Only POST requests are allowed"}), 405
 
 if __name__ == '__main__':
-
-    
-    # socketio.run(app, host="0.0.0.0", port=5000)
-    http_server = WSGIServer(('', 5000), app)
-    http_server.serve_forever()
+    app.run("0.0.0.0", port=4001)
