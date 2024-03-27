@@ -442,7 +442,7 @@ def POS_WANG(frames, fs):
             h = S[0, :] + (np.std(S[0, :]) / np.std(S[1, :])) * S[1, :]
             mean_h = np.mean(h)
             for temp in range(h.shape[1]):
-                h[0, temp] = (h[0, temp] - mean_h) / np.std(h)
+                h[0, temp] = (h[0, temp] - mean_h)
             H[0, m:n] = H[0, m:n] + (h[0])
     BVP = H
     BVP = detrend(np.mat(BVP).H, 100)
