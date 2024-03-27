@@ -125,7 +125,7 @@ def pred_adv(wave):
     sp_signal = wave
     t1=sp_signal[0:156].reshape(1,156,1)
     pred=model_spo2.predict(t1)
-    pred = min(99.998,pred)
+    pred = min([[99.998]],pred)
     return sys,di,pred
 
 
@@ -683,7 +683,7 @@ def receive_list():
                     "rr": (round(float(rr), 2)), 
                     "sysbp": (math.floor(sysbp[0, 0])), 
                     "diabp": (math.floor(diabp[0,0])), 
-                    # "spo2": (math.floor(spo2[0 ,0])),
+                    "spo2": (math.floor(spo2[0 ,0])),
                     "vo2max": (round(vo2max, 1)), 
                     "si": (round(si, 1)), 
                     "mhr": (math.floor(float(mhr))), 
@@ -724,7 +724,7 @@ def receive_list():
                         "rr": (round(float(rr), 2)), 
                         "sysbp": (math.floor(sysbp[0, 0])), 
                         "diabp": (math.floor(diabp[0,0])), 
-                        # "spo2": (math.floor(spo2[0 ,0])),
+                        "spo2": (math.floor(spo2[0 ,0])),
                         "spo2": (math.floor(spo2[0,0])),
                         "vo2max": (round(vo2max, 1)), 
                         "si": (round(si, 1)), 
