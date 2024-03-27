@@ -702,7 +702,7 @@ def receive_list():
                 })
                 
                 
-                print(f'SPO2 is {math.floor(spo2[0,0])} and type is {type(math.floor(spo2[0,0]))}')
+                print(f'SPO2 is {spo2} and type is {spo2}')
                 
                 # if client session directory in folder, deleted, else skip
                 if userSessionUID in os.listdir('./'):
