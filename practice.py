@@ -106,7 +106,7 @@ def calc_hr_hp(wave,sampling_rate=30):
 
 def calc_hp_metrics(wave,sampling_rate=30):
   wd1,m1=hp.process(wave, sampling_rate, report_time = False)
-  return m1['ibi'], m1['sdnn'], m1['rmssd'], m1['pnn20'], m1['pnn50'], m1['sdnn']/m1['rmssd'], math.floor(m1['breathingrate'] * 60)
+  return m1['ibi'], m1['sdnn'], m1['rmssd'], m1['pnn20'], m1['pnn50'], m1['sdnn']/m1['rmssd'], int(math.floor(m1['breathingrate'] * 60))
 
 def calc_hr_rr(wave,sampling_rate=30):
   rol_mean = rolling_mean(wave, windowsize = 1.05, sample_rate = sampling_rate)
@@ -705,12 +705,12 @@ def receive_list():
                 print(f'SPO2 is {spo2} and type is {spo2}')
                 
                 # if client session directory in folder, deleted, else skip
-                if userSessionUID in os.listdir('./'):
-                    try:
-                        shutil.rmtree(f'./{userSessionUID}')
-                        print(f'Client directory removed successfully -> {userSessionUID}')
-                    except:
-                        print(f'Failed to remove client directory -> {userSessionUID}')
+                # if userSessionUID in os.listdir('./'):
+                #     try:
+                #         shutil.rmtree(f'./{userSessionUID}')
+                #         print(f'Client directory removed successfully -> {userSessionUID}')
+                #     except:
+                #         print(f'Failed to remove client directory -> {userSessionUID}')
                 
                 return json.dumps(
                     {
@@ -750,12 +750,12 @@ def receive_list():
             print(e)
             
             # if client session directory in folder, deleted, else skip
-            if userSessionUID in os.listdir('./'):
-                try:
-                    shutil.rmtree(f'./{userSessionUID}')
-                    print(f'Client directory removed successfully -> {userSessionUID}')
-                except:
-                    print(f'Failed to remove client directory -> {userSessionUID}')
+            # if userSessionUID in os.listdir('./'):
+                # try:
+                #     shutil.rmtree(f'./{userSessionUID}')
+                #     print(f'Client directory removed successfully -> {userSessionUID}')
+                # except:
+                #     print(f'Failed to remove client directory -> {userSessionUID}')
             return json.dumps({"opcode": 500})
     else:
         return jsonify({"error": "Only POST requests are allowed"}), 405
