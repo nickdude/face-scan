@@ -626,7 +626,7 @@ def save_sorted_files(filenames, userSessionUID):
         
         if int(post) == 100:
             os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{pre}{post[1:]}.png')
-            print(f'{pre}{post[1:]}.png')
+            # print(f'{pre}{post[1:]}.png')
             
         else:
             
@@ -636,16 +636,16 @@ def save_sorted_files(filenames, userSessionUID):
                     print(f'{int(post)}.png')
                 else:
                     os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(pre) - 1}0{int(post)}.png')
-                    print(f'{int(pre) - 1}0{int(post)}.png')
+                    # print(f'{int(pre) - 1}0{int(post)}.png')
                 
             else:
                 if (int(pre) - 1) == 0:
                     os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{post}.png')
-                    print(f'{post}.png')
+                    # print(f'{post}.png')
                     
                 else:
                     os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(pre) - 1}{post}.png')
-                    print(f'{int(pre) - 1}{post}.png')
+                    # print(f'{int(pre) - 1}{post}.png')
 
 
 @app.route('/', methods=['POST'])
