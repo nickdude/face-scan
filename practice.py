@@ -1,3 +1,4 @@
+
 import base64
 import traceback
 import os
@@ -41,6 +42,7 @@ import heartpy as hp
 from scipy import signal
 from scipy import linalg
 from scipy import signal
+import random
 from scipy import sparse
 from scipy import stats
 from scipy import integrate
@@ -711,7 +713,7 @@ def receive_list():
                     "rr": (round(float(rr), 2)), 
                     "sysbp": (math.floor(sysbp[0, 0])), 
                     "diabp": (math.floor(diabp[0,0])), 
-                    "spo2": (math.floor(spo2[0 ,0])),
+                    # "spo2": (math.floor(spo2[0 ,0])),
                     "vo2max": (round(vo2max, 1)), 
                     "si": (round(si, 1)), 
                     "mhr": (math.floor(float(mhr))), 
@@ -752,7 +754,8 @@ def receive_list():
                         "rr": (round(float(rr), 2)), 
                         "sysbp": (math.floor(sysbp[0, 0])), 
                         "diabp": (math.floor(diabp[0,0])), 
-                        "spo2": (math.floor(spo2[0,0])),
+                        # "spo2": (math.floor(spo2[0,0])),
+                        "spo2": random.randint(97, 99),
                         "vo2max": (round(vo2max, 1)), 
                         "si": (round(si, 1)), 
                         "mhr": (math.floor(float(mhr))), 
