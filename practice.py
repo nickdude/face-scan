@@ -1,4 +1,5 @@
 import base64
+import traceback
 import os
 import json
 import time
@@ -774,7 +775,7 @@ def receive_list():
             # return 200, till all image loads have not been sent to server
             return json.dumps({"opcode": 200})
         except Exception as e:
-            print(e)
+            print(traceback.format_exc())
             
             # if client session directory in folder, deleted, else skip
             if userSessionUID in os.listdir('./'):
