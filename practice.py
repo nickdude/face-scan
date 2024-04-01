@@ -708,7 +708,7 @@ def process_text_file(sessionDirPath):
             "co": (round(float(co), 1)),
             "map": (round(float(map), 1)), 
             "hu": (round(float(hu), 1)), 
-            "bv": (bv), 
+            "bv": round(float(bv)), 
             "tbw": (float(tbw)), 
             "bwp": (round(float(bwp), 1)), 
             "bmi": (round(float(bmi), 1)), 
@@ -716,6 +716,8 @@ def process_text_file(sessionDirPath):
             "asth_risk": round(float(asth_rs),1)
         
         }
+    
+    print(f'Writing json file')
 
     jsonFileName = fileName.replace('.txt', '.json')
     jsonFilePath = os.path.join(sessionDirPath, jsonFileName)

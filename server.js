@@ -198,10 +198,14 @@ io.on("connection", (socket) => {
           });
         });
 
+        fs.rm(filePath, (err)=>{
+            if ( err) {
+                "Error deleting png converted file"   
+            }
+        })
+
         if (stringCounter === 900) {
           console.log("Executing python code");
-
-
 
           // Execute Python script
           const pythonScript = `python3 practice.py ${socket.id}`;
@@ -211,6 +215,12 @@ io.on("connection", (socket) => {
               return;
             }
 
+
+            console.log("Inside executing python script")
+
+            if ( stderr) {
+                console.error("Python err", stderr)
+            }
             console.log(`Python output: ${stdout}`);
 
             // Read and emit JSON data
@@ -223,8 +233,11 @@ io.on("connection", (socket) => {
                 console.error("Error reading JSON data:", err);
                 return;
               }
+              const parsedData = JSON.parse(jsonData); // Parse the string to a JSON object
 
-              socket.emit("results", jsonData);
+              console.log(parsedData)
+
+              socket.emit("results", parsedData);
             });
           });
 
