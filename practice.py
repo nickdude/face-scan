@@ -58,7 +58,7 @@ from heartpy.preprocessing import enhance_peaks
 from scipy.signal import butter, filtfilt
 from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import FastICA, PCA
-import PyEMD
+from PyEMD import CEEMDAN
 
 import os
 import cv2
@@ -80,7 +80,12 @@ import tensorflow as tf
 import lightgbm
 
 
-app = Flask(__name__)
+
+import sys
+import json
+import os
+
+
 
 ################################################
 
@@ -257,7 +262,7 @@ def filter_respiratory_IMFs(dominant_frequencies, lower_bound=0.1, upper_bound=0
       return respiratory_IMFs_indices
 
 def get_respirate_CEEMDAN_PCA(wave):
-  ceemdan = PyEMD.CEEMDAN(parallel=True, processes=6)
+  ceemdan = CEEMDAN.CEEMDAN(parallel=True, processes=6)
   ceemdan.noise_seed(seed=2009)
   imfs = ceemdan(wave)
   num_imfs, length = imfs.shape
@@ -613,183 +618,86 @@ def read_png_frames(folder_path):
 
     return frames
 
-def reorder_files(userSessionUID):
-    filenames = os.listdir(f'./{userSessionUID}')
-    # print(filenames)
-    # print(len(filenames))
-    save_sorted_files(filenames, userSessionUID)
+
+
+
+
+############################################################################
+
+
+def process_text_file(sessionDirPath):
     
-
-def save_sorted_files(filenames, userSessionUID):
-    l = filenames
-    for i in range(len(l)):
-        print(f'\n\nfor filename {l[i]}')
-        pre, post = l[i][12:].split('-')
-        post =  post.split('.')[0]
+    if ( sessionDirPath in os.listdir('./')):
         
-        if int(post) == 100:
-            os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{pre}{post[1:]}.png')
-            # print(f'{pre}{post[1:]}.png')
-            
-        else:
-            
-            if len(post) == 1:
-                if (int(pre) - 1) == 0:
-                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(post)}.png')
-                    print(f'{int(post)}.png')
-                else:
-                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(pre) - 1}0{int(post)}.png')
-                    # print(f'{int(pre) - 1}0{int(post)}.png')
-                
-            else:
-                if (int(pre) - 1) == 0:
-                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{post}.png')
-                    # print(f'{post}.png')
-                    
-                else:
-                    os.rename(f'./{userSessionUID}/{l[i]}', f'./{userSessionUID}/{int(pre) - 1}{post}.png')
-                    # print(f'{int(pre) - 1}{post}.png')
+        frames = read_png_frames(f'./{sessionDirPath}')
+        
+        _, frames = get_ROI(frames)
 
+        sampling_rate = 30
+        wave = POS_WANG(frames, sampling_rate)
 
-@app.route('/', methods=['POST'])
-def receive_list():
-    print('got something')
-    if request.method == 'POST':
-        try:
-            data = request.get_json()
-            # print(data)
-            # print(len(str(data)))
-            
-            
-            fileName = str(list(data.keys())[0])
-            userSessionUID = fileName[8:]
-            
-            if not os.path.exists(f'./{userSessionUID}'):
-                os.mkdir(f'{userSessionUID}')
-            
-            print(userSessionUID)
-            arrImages = data[f'{fileName}']
-            i = 1
-            for b64ImageString in arrImages:
-                image_data = base64.b64decode(b64ImageString)
-                with open(f'./{userSessionUID}/output_image{fileName[4]}-{i}.png', 'wb') as file:
-                    file.write(image_data)
-                    i += 1
-            
-            if ( 'output_image9-100.png' in os.listdir(f'./{userSessionUID}') ):
-                reorder_files(userSessionUID)
-                
-                frames = read_png_frames(f'./{userSessionUID}')
-                _, frames = get_ROI(frames)
+        heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
+        ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
+        sysbp, diabp, spo2 = pred_adv(wave)
 
-                sampling_rate = 30
-                wave = POS_WANG(frames, sampling_rate)
+        age = 21
+        gender = 0
+        weight = 71
+        height = 172
 
-                heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
-                ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
-                sysbp, diabp, spo2 = pred_adv(wave)
+        vo2max = calculate_cardio_fit(age,heart_rate_bpm)
+        [mhr, hrr, thr, co, map, 
+        hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
+        si = calculate_Stress_Index(wave, sampling_rate)
+        wave2 = POS_WANG2(frames, sampling_rate)
+        asth_rs = get_asthama_riskscore(wave2)
+        
+        
+        print({
+            'hr': (math.floor(heart_rate_bpm)),  
+            "ibi": (round(float(ibi), 1)), 
+            "sdnn": (round(float(sdnn), 1)), 
+            "rmssd": (round(float(rmssd), 1)), 
+            "pnn20": (round(float(pnn20) * 100, 1)), 
+            "pnn50": (round(float(pnn50) * 100, 1)), 
+            "hrv": (hrv),
+            "rr": (round(float(rr), 2)), 
+            "sysbp": (math.floor(sysbp[0, 0])), 
+            "diabp": (math.floor(diabp[0,0])), 
+            # "spo2": (math.floor(spo2[0 ,0])),
+            "vo2max": (round(vo2max, 1)), 
+            "si": (round(si, 1)), 
+            "mhr": (math.floor(float(mhr))), 
+            "hrr": (math.floor(float(hrr))), 
+            "thr": (math.floor(float(thr))), 
+            "co": (round(float(co), 1)),
+            "map": (round(float(map), 1)), 
+            "hu": (round(float(hu), 1)), 
+            "bv": (bv), 
+            "tbw": (float(tbw)), 
+            "bwp": (round(float(bwp), 1)), 
+            "bmi": (round(float(bmi), 1)), 
+            "bf": (round(float(bf), 1)), 
+            "asth_risk": round(float(asth_rs),1)
+        
+        })
+        
+    
+    
+    # filePath = os.path.join(textDir, fileName)
+    # with open(filePath, 'r') as file:
+    #     textData = file.read()
 
-                age = 21
-                gender = 0
-                weight = 71
-                height = 172
+    # # Process text data and generate JSON
+    # jsonData = {"status": "success"}
 
-                vo2max = calculate_cardio_fit(age,heart_rate_bpm)
-                [mhr, hrr, thr, co, map, 
-                hu, bv, tbw, bwp, bmi, bf] = calc_all_params(age, gender, weight, height, sysbp, diabp, heart_rate_bpm)
-                si = calculate_Stress_Index(wave, sampling_rate)
-                wave2 = POS_WANG2(frames, sampling_rate)
-                asth_rs = get_asthama_riskscore(wave2)
-                
-                
-                print({
-                    'hr': (math.floor(heart_rate_bpm)),  
-                    "ibi": (round(float(ibi), 1)), 
-                    "sdnn": (round(float(sdnn), 1)), 
-                    "rmssd": (round(float(rmssd), 1)), 
-                    "pnn20": (round(float(pnn20) * 100, 1)), 
-                    "pnn50": (round(float(pnn50) * 100, 1)), 
-                    "hrv": (hrv),
-                    "rr": (round(float(rr), 2)), 
-                    "sysbp": (math.floor(sysbp[0, 0])), 
-                    "diabp": (math.floor(diabp[0,0])), 
-                    # "spo2": (math.floor(spo2[0 ,0])),
-                    "vo2max": (round(vo2max, 1)), 
-                    "si": (round(si, 1)), 
-                    "mhr": (math.floor(float(mhr))), 
-                    "hrr": (math.floor(float(hrr))), 
-                    "thr": (math.floor(float(thr))), 
-                    "co": (round(float(co), 1)),
-                    "map": (round(float(map), 1)), 
-                    "hu": (round(float(hu), 1)), 
-                    "bv": (bv), 
-                    "tbw": (float(tbw)), 
-                    "bwp": (round(float(bwp), 1)), 
-                    "bmi": (round(float(bmi), 1)), 
-                    "bf": (round(float(bf), 1)), 
-                    "asth_risk": round(float(asth_rs),1)
-                
-                })
-                
-                
-                print(f'SPO2 is {spo2} and type is {spo2}')
-                
-                # if client session directory in folder, deleted, else skip
-                if userSessionUID in os.listdir('./'):
-                    try:
-                        shutil.rmtree(f'./{userSessionUID}')
-                        print(f'Client directory removed successfully -> {userSessionUID}')
-                    except:
-                        print(f'Failed to remove client directory -> {userSessionUID}')
-                
-                return json.dumps(
-                    {
-                        'hr': (math.floor(heart_rate_bpm)),  
-                        "ibi": (round(float(ibi)), 1), 
-                        "sdnn": (round(float(sdnn), 1)), 
-                        "rmssd": (round(float(rmssd), 1)), 
-                        "pnn20": (round(float(pnn20) * 100, 1)), 
-                        "pnn50": (round(float(pnn50) * 100, 1)), 
-                        "hrv": (hrv),
-                        "rr": (round(float(rr), 2)), 
-                        "sysbp": (math.floor(sysbp[0, 0])), 
-                        "diabp": (math.floor(diabp[0,0])), 
-                        # "spo2": (math.floor(spo2[0,0])),
-                        "spo2": random.randint(97, 99),
-                        "vo2max": (round(vo2max, 1)), 
-                        "si": (round(si, 1)), 
-                        "mhr": (math.floor(float(mhr))), 
-                        "hrr": (math.floor(float(hrr))), 
-                        "thr": (math.floor(float(thr))), 
-                        "co": (round(float(co), 1)),
-                        "map": (round(float(map), 1)), 
-                        "hu": (round(float(hu), 1)), 
-                        "bv": (bv), 
-                        "tbw": (float(tbw)), 
-                        "bwp": (round(float(bwp), 1)), 
-                        "bmi": (round(float(bmi), 1)), 
-                        "bf": (round(float(bf), 1)), 
-                        "asth_risk": round(float(asth_rs),1)
-                    
-                    }
-                )
-            
-            # return 200, till all image loads have not been sent to server
-            return json.dumps({"opcode": 200})
-        except Exception as e:
-            print(traceback.format_exc())
-            
-            # if client session directory in folder, deleted, else skip
-            if userSessionUID in os.listdir('./'):
-                try:
-                    shutil.rmtree(f'./{userSessionUID}')
-                    print(f'Client directory removed successfully -> {userSessionUID}')
-                except:
-                    print(f'Failed to remove client directory -> {userSessionUID}')
-            return json.dumps({"opcode": 500})
-    else:
-        return jsonify({"error": "Only POST requests are allowed"}), 405
+    # jsonFileName = fileName.replace('.txt', '.json')
+    # jsonFilePath = os.path.join(textDir, jsonFileName)
 
-if __name__ == '__main__':
-    app.run("0.0.0.0", port=5000)
+    # with open(jsonFilePath, 'w') as file:
+    #     json.dump(jsonData, file)
 
+if __name__ == "__main__":
+    sessionDirPath = sys.argv[1]
+
+    process_text_file(sessionDirPath)

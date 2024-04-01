@@ -93,6 +93,8 @@ const io = socketIO(server);
 
 // utility functions
 
+const separationKeyword = "faceScanImageSeparationIdentifier";
+
 const getDirNames = () => {
   var dirNames = [];
   const rootDir = "./";
@@ -132,107 +134,128 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-
   console.log(`User connected: ${socket.id}`);
-
 
   // if no client directory, make one
 
-  if ( !getDirNames().includes(socket.id)){
+  if (!getDirNames().includes(socket.id)) {
     const directoryPath = `./${socket.id}`;
     fs.mkdir(directoryPath, { recursive: true }, (err) => {
-        if (err) {
-          // Handle error if directory creation fails
-          console.error("Error creating directory:", err);
-        } else {
-          // Directory created successfully
-          console.log(`Client session directory created successfully => ${socket.id}`);
-        }
-      });
-
-      let textData = "";
-
-
-  socket.on("message", (data) => {
-    textData += data + "\n"; // Append the received string and a newline character
-    stringCounter++;
-
-    const fileName = `user_${socket.id}_text.txt`;
-    const filePath = path.join(directoryPath, fileName);
-
-    fs.writeFile(filePath, textData, (err) => {
       if (err) {
-        console.error("Error writing text data:", err);
-        return 500;
-      }
-
-
-      console.log(
-        `Text data written to ${filePath} => Iteration ${stringCounter}`
-      );
-      
-
-      if (stringCounter === 900) {
-
-        console.log("Executing python code")
-        // // Execute Python script
-        // const pythonScript = `python practice.py ${textDir} ${fileName}`;
-        // exec(pythonScript, (error, stdout, stderr) => {
-        //   if (error) {
-        //     console.error(`Error executing Python script: ${error}`);
-        //     return;
-        //   }
-
-        //   console.log(`Python output: ${stdout}`);
-
-        //   // Read and emit JSON data
-        //   const jsonFilePath = path.join(
-        //     textDir,
-        //     fileName.replace(".txt", ".json")
-        //   );
-        //   fs.readFile(jsonFilePath, "utf8", (err, jsonData) => {
-        //     if (err) {
-        //       console.error("Error reading JSON data:", err);
-        //       return;
-        //     }
-
-        //     socket.emit("json", jsonData);
-        //   });
-        // });
-
-        // stringCounter = 0; // Reset the string counter after processing
+        // Handle error if directory creation fails
+        console.error("Error creating directory:", err);
+      } else {
+        // Directory created successfully
+        console.log(
+          `Client session directory created successfully => ${socket.id}`
+        );
       }
     });
 
-    socket.emit("message_received")
+    let textData = "";
 
-  });
+    socket.on("message", (data) => {
+      textData = "";
+      textData += data + "\n"; // Append the received string and a newline character
+      stringCounter++;
 
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.id}`);
+      var index = textData.indexOf(separationKeyword);
 
-    if ( getDirNames().includes(socket.id)){
-        fs.rmdir(`./${socket.id}`, (err)=>{
-            if (err) {
-                console.log(`Error removing directory => ${socket.id}`)
-                return
+      var frameNumber = textData.slice(0, index);
+
+      const fileName = `user_${socket.id}_text_${frameNumber}.txt`;
+      const filePath = path.join(directoryPath, fileName);
+
+      fs.writeFile(filePath, textData, (err) => {
+        if (err) {
+          console.error("Error writing text data:", err);
+          return 500;
+        }
+
+        console.log(
+          `Text data written to ${filePath} => Iteration ${stringCounter}`
+        );
+
+        fs.readFile(filePath, "utf8", (err, data) => {
+          if (err) {
+            // Handle error if reading file fails
+            console.error("Error reading file:", err);
+            return;
+          }
+
+          console.log(
+            `slicing after  ${
+              index + separationKeyword.length
+            } for frame ${stringCounter}`
+          );
+          const base64String = data.slice(index + separationKeyword.length, data.length - 1);
+
+          const imageBuffer = Buffer.from(base64String, "base64");
+
+          fs.writeFile(`./${socket.id}/output${frameNumber}.png`, imageBuffer, (err) => {
+            if (err) throw err;
+            console.log("The file has been saved!");
+          });
+        });
+
+        if (stringCounter === 900) {
+          console.log("Executing python code");
+
+
+
+          // Execute Python script
+          const pythonScript = `python3 practice.py ${socket.id}`;
+          exec(pythonScript, (error, stdout, stderr) => {
+            if (error) {
+              console.error(`Error executing Python script: ${error}`);
+              return;
             }
-        })
-        return
-    }
 
-    stringCounter = 0; // Reset the string counter on disconnect
-  });
-  }
-  else{
+            console.log(`Python output: ${stdout}`);
+
+            // // Read and emit JSON data
+            // const jsonFilePath = path.join(
+            //   textDir,
+            //   fileName.replace(".txt", ".json")
+            // );
+            // fs.readFile(jsonFilePath, "utf8", (err, jsonData) => {
+            //   if (err) {
+            //     console.error("Error reading JSON data:", err);
+            //     return;
+            //   }
+
+            //   socket.emit("json", jsonData);
+            // });
+          });
+
+          stringCounter = 0; // Reset the string counter after processing
+        }
+      });
+
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`User disconnected: ${socket.id}`);
+
+      if (getDirNames().includes(socket.id)) {
+        fs.rmdir(`./${socket.id}`, (err) => {
+          if (err) {
+            console.log(`Error removing directory => ${socket.id}`);
+            return;
+          }
+        });
+        return;
+      }
+
+      stringCounter = 0; // Reset the string counter on disconnect
+    });
+  } else {
     // TODO: handle by ending the session completely
     return 500; // temp solution for now
   }
-
 });
 
-
-port = 5000
+port = 3000;
 server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
