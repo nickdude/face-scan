@@ -171,38 +171,38 @@ def calculate_cardio_fit(age,heart_rate):
 
 def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
   Height = Height/100
-  try:
-    HR = heart_rate
-    HR_MAX = 208-0.7 * Age
-    HR_Reserve = HR_MAX - HR
-    THR = (HR_Reserve * 0.2) + HR
 
-    Stroke_Volume = (sys-di)*2
-    Cardiac_OP = (Stroke_Volume * HR)/1000
+  HR = heart_rate
+  HR_MAX = 208-0.7 * Age
+  HR_Reserve = HR_MAX - HR
+  THR = (HR_Reserve * 0.2) + HR
 
-    Mean_Arterial_Pressure = di + (1/3*(sys-di))
+  Stroke_Volume = (sys-di)*2
+  Cardiac_OP = (Stroke_Volume * HR)/1000
 
-    heart_utilized = (HR/HR_MAX)*100
+  Mean_Arterial_Pressure = di + (1/3*(sys-di))
 
-    if Gender == 0:
-      Blood_Volume = ((0.3669 * Height**3) + (0.03219 * Weight) + 0.6041)  * 1000
-    else:
-      Blood_Volume = ((0.3561 * Height**3) + (0.03308 * Weight) + 0.1833)  * 1000
+  heart_utilized = (HR/HR_MAX)*100
 
-    if Gender == 0:
-      TBW = 2.447 - 0.09156 * Age + 0.1074 * (Height*100) + 0.3362 * Weight
-    else:
-      TBW = -2.097 + (0.1069*(Height*100)) + (0.2466 * Weight)
+  if Gender == 0:
+    Blood_Volume = ((0.3669 * Height**3) + (0.03219 * Weight) + 0.6041)  * 1000
+  else:
+    Blood_Volume = ((0.3561 * Height**3) + (0.03308 * Weight) + 0.1833)  * 1000
 
-    Body_water = (TBW/Weight)*100
+  if Gender == 0:
+    TBW = 2.447 - 0.09156 * Age + 0.1074 * (Height*100) + 0.3362 * Weight
+  else:
+    TBW = -2.097 + (0.1069*(Height*100)) + (0.2466 * Weight)
 
-    BMI = Weight / Height**2
+  Body_water = (TBW/Weight)*100
 
-    Body_Fat = -44.988 + (0.503 * Age) + (10.689 * Gender) + (3.172 * BMI) - (0.026 * BMI**2) + (0.181 * BMI * Gender) - (0.02 * BMI * Age) - (0.005 * BMI**2 * Gender) + (0.00021 * BMI**2 * Age)
+  BMI = Weight / Height**2
+
+  Body_Fat = -44.988 + (0.503 * Age) + (10.689 * Gender) + (3.172 * BMI) - (0.026 * BMI**2) + (0.181 * BMI * Gender) - (0.02 * BMI * Age) - (0.005 * BMI**2 * Gender) + (0.00021 * BMI**2 * Age)
 
 
 
-    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0]), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
+  return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0]), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
 
     # print('Maximum Heart Rate:'+str(HR_MAX)+' bpm')
     # print('Heart Rate Reserve:'+str(HR_Reserve)+' bpm')
@@ -217,8 +217,6 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
     # print('Body-Mass Index is: '+str(BMI)+' kg/m2')
     # print('Body Fat is: '+str(Body_Fat)+' %')
 
-  except Exception as e:
-    print(f'Check your input prameters and try again! => {e}')
 
 
 def calculate_mode_50ms_bins(ibi):
