@@ -202,8 +202,7 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
 
 
 
-    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0])
-            , str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
+    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0]), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
 
     # print('Maximum Heart Rate:'+str(HR_MAX)+' bpm')
     # print('Heart Rate Reserve:'+str(HR_Reserve)+' bpm')
@@ -218,8 +217,8 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
     # print('Body-Mass Index is: '+str(BMI)+' kg/m2')
     # print('Body Fat is: '+str(Body_Fat)+' %')
 
-  except:
-    print('Check your input prameters and try again!')
+  except Exception as e:
+    print(f'Check your input prameters and try again! => {e}')
 
 
 def calculate_mode_50ms_bins(ibi):
