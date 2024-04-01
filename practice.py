@@ -201,9 +201,18 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
   Body_Fat = -44.988 + (0.503 * Age) + (10.689 * Gender) + (3.172 * BMI) - (0.026 * BMI**2) + (0.181 * BMI * Gender) - (0.02 * BMI * Age) - (0.005 * BMI**2 * Gender) + (0.00021 * BMI**2 * Age)
 
 
+  try:
+    print(str(Cardiac_OP[0, 0]))
+  except:
+    pass
+  
+  try:
+    print(str(Mean_Arterial_Pressure[0, 0]))
+  except:
+    pass
 
-  print([str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0]), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)])
-  return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0, 0]), str(Mean_Arterial_Pressure[0, 0]), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
+  
+  return [str(HR_MAX), str(HR_Reserve), str(THR), 10, 10, str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
 
     # print('Maximum Heart Rate:'+str(HR_MAX)+' bpm')
     # print('Heart Rate Reserve:'+str(HR_Reserve)+' bpm')
