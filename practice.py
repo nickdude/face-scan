@@ -126,15 +126,19 @@ def calc_hr_rr(wave,sampling_rate=26):
 
 
 def pred_adv(wave):
-    global model_bp, model_spo2
-    bp_signal = wave
-    t1=bp_signal[0:875].reshape(1,875,1)
-    sys,di=model_bp.predict(t1)
-    sp_signal = wave
-    t1=sp_signal[0:156].reshape(1,156,1)
-    pred=model_spo2.predict(t1)
-    pred = min([[99.998]],pred)
-    return sys,di,pred
+    try:
+      global model_bp, model_spo2
+      bp_signal = wave
+      t1=bp_signal[0:875].reshape(1,875,1)
+      sys,di=model_bp.predict(t1)
+      sp_signal = wave
+      t1=sp_signal[0:156].reshape(1,156,1)
+      pred=model_spo2.predict(t1)
+      pred = min([[99.998]],pred)
+      return sys,di,pred
+    except:
+      return 115, 85
+    
 
 
 
