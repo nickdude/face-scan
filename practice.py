@@ -126,18 +126,15 @@ def calc_hr_rr(wave,sampling_rate=26):
 
 
 def pred_adv(wave):
-    try:
-      global model_bp, model_spo2
-      bp_signal = wave
-      t1=bp_signal[0:875].reshape(1,875,1)
-      sys,di=model_bp.predict(t1)
-      sp_signal = wave
-      t1=sp_signal[0:156].reshape(1,156,1)
-      pred=model_spo2.predict(t1)
-      pred = min([[99.998]],pred)
-      return sys,di,pred
-    except:
-      return np.array([[115]]), np.array([[85]]), np.array([[115]])
+    global model_bp, model_spo2
+    bp_signal = wave
+    t1=bp_signal[0:875].reshape(1,875,1)
+    sys,di=model_bp.predict(t1)
+    sp_signal = wave
+    t1=sp_signal[0:156].reshape(1,156,1)
+    pred=model_spo2.predict(t1)
+    pred = min([[99.998]],pred)
+    return sys,di,pred
     
 
 
@@ -212,7 +209,7 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
     pass
 
   
-  return [str(HR_MAX), str(HR_Reserve), str(THR), 10, 10, str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
+  return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP), str(Mean_Arterial_Pressure), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
 
     # print('Maximum Heart Rate:'+str(HR_MAX)+' bpm')
     # print('Heart Rate Reserve:'+str(HR_Reserve)+' bpm')
@@ -648,7 +645,7 @@ def process_text_file(sessionDirPath):
         wave = POS_WANG(frames, sampling_rate)
 
         heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
-        ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
+        ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=26)
         sysbp, diabp, spo2 = pred_adv(wave)
 
         age = 21
