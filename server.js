@@ -255,7 +255,7 @@ io.on("connection", (socket) => {
   }
 });
 
-port = 3000;
+port = 5000;
 server.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
