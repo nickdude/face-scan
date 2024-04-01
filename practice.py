@@ -137,7 +137,10 @@ def pred_adv(wave):
       pred = min([[99.998]],pred)
       return sys,di,pred
     except:
-      return 115, 85
+      t1=sp_signal[0:156].reshape(1,156,1)
+      pred=model_spo2.predict(t1)
+      pred = min([[99.998]],pred)
+      return 115, 85, pred
     
 
 
