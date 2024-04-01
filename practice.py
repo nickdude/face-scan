@@ -137,7 +137,7 @@ def pred_adv(wave):
       pred = min([[99.998]],pred)
       return sys,di,pred
     except:
-      return 115, 85, 98
+      return np.array([[115]]), np.array([[85]]), np.array([[115]])
     
 
 
