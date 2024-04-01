@@ -107,16 +107,16 @@ clf_asth = lightgbm.Booster(model_file='lgbr_cust_slicegtppg_91.txt')
 
 
 
-def calc_hr_hp(wave,sampling_rate=30):
+def calc_hr_hp(wave,sampling_rate=26):
   wd1,m1=hp.process(wave, sampling_rate, report_time = False)
   hp_hr=m1['bpm']
   return hp_hr
 
-def calc_hp_metrics(wave,sampling_rate=30):
+def calc_hp_metrics(wave,sampling_rate=26):
   wd1,m1=hp.process(wave, sampling_rate, report_time = False)
   return m1['ibi'], m1['sdnn'], m1['rmssd'], m1['pnn20'], m1['pnn50'], m1['sdnn']/m1['rmssd'], int(math.floor(m1['breathingrate'] * 60))
 
-def calc_hr_rr(wave,sampling_rate=30):
+def calc_hr_rr(wave,sampling_rate=26):
   rol_mean = rolling_mean(wave, windowsize = 1.05, sample_rate = sampling_rate)
   wd = hp.peakdetection.fit_peaks(wave, rol_mean, sampling_rate)
   peak_times = np.array(wd['peaklist']) / sampling_rate
@@ -268,7 +268,7 @@ def get_respirate_CEEMDAN_PCA(wave):
   num_imfs, length = imfs.shape
 
   IMFs = imfs
-  sampling_rate = 30  # Hz
+  sampling_rate = 26  # Hz
   n_imfs, n_samples = IMFs.shape
 
   dominant_frequencies = find_dominant_frequencies(IMFs, sampling_rate)
@@ -633,7 +633,7 @@ def process_text_file(sessionDirPath):
         
         _, frames = get_ROI(frames)
 
-        sampling_rate = 30
+        sampling_rate = 26
         wave = POS_WANG(frames, sampling_rate)
 
         heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
