@@ -58,7 +58,7 @@ from heartpy.preprocessing import enhance_peaks
 from scipy.signal import butter, filtfilt
 from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import FastICA, PCA
-from PyEMD import CEEMDAN
+import PyEMD
 
 import os
 import cv2
@@ -262,7 +262,7 @@ def filter_respiratory_IMFs(dominant_frequencies, lower_bound=0.1, upper_bound=0
       return respiratory_IMFs_indices
 
 def get_respirate_CEEMDAN_PCA(wave):
-  ceemdan = CEEMDAN.CEEMDAN(parallel=True, processes=6)
+  ceemdan = PyEMD.CEEMDAN(parallel=True, processes=6)
   ceemdan.noise_seed(seed=2009)
   imfs = ceemdan(wave)
   num_imfs, length = imfs.shape
