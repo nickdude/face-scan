@@ -155,6 +155,8 @@ io.on("connection", (socket) => {
     let textData = "";
 
     socket.on("message", (data) => {
+
+      socket.emit("message_received")
       textData = "";
       textData += data + "\n"; // Append the received string and a newline character
       stringCounter++;
