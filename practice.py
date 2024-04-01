@@ -207,9 +207,15 @@ def calc_all_params(Age, Gender, Weight, Height, sys, di, heart_rate):
     print(str(Mean_Arterial_Pressure[0, 0]))
   except:
     pass
+  
+  if isinstance(Cardiac_OP, np.ndarray) and isinstance(Mean_Arterial_Pressure, np.ndarray):
+    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP[0,0]), str(Mean_Arterial_Pressure[0,0]), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
+  
+  else:
+    return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP), str(Mean_Arterial_Pressure), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
 
   
-  return [str(HR_MAX), str(HR_Reserve), str(THR), str(Cardiac_OP), str(Mean_Arterial_Pressure), str(heart_utilized), str(Blood_Volume), str(TBW), str(Body_water), str(BMI), str(Body_Fat)]
+  
 
     # print('Maximum Heart Rate:'+str(HR_MAX)+' bpm')
     # print('Heart Rate Reserve:'+str(HR_Reserve)+' bpm')
@@ -661,34 +667,34 @@ def process_text_file(sessionDirPath):
         asth_rs = get_asthama_riskscore(wave2)
         
         
-        print({
-            'hr': (math.floor(heart_rate_bpm)),  
-            "ibi": (round(float(ibi), 1)), 
-            "sdnn": (round(float(sdnn), 1)), 
-            "rmssd": (round(float(rmssd), 1)), 
-            "pnn20": (round(float(pnn20) * 100, 1)), 
-            "pnn50": (round(float(pnn50) * 100, 1)), 
-            "hrv": (hrv),
-            "rr": (round(float(rr), 2)), 
-            "sysbp": (math.floor(sysbp[0, 0])), 
-            "diabp": (math.floor(diabp[0,0])), 
-            # "spo2": (math.floor(spo2[0 ,0])),
-            "vo2max": (round(vo2max, 1)), 
-            "si": (round(si, 1)), 
-            "mhr": (math.floor(float(mhr))), 
-            "hrr": (math.floor(float(hrr))), 
-            "thr": (math.floor(float(thr))), 
-            "co": (round(float(co), 1)),
-            "map": (round(float(map), 1)), 
-            "hu": (round(float(hu), 1)), 
-            "bv": (bv), 
-            "tbw": (float(tbw)), 
-            "bwp": (round(float(bwp), 1)), 
-            "bmi": (round(float(bmi), 1)), 
-            "bf": (round(float(bf), 1)), 
-            "asth_risk": round(float(asth_rs),1)
+        # print({
+        #     'hr': (math.floor(heart_rate_bpm)),  
+        #     "ibi": (round(float(ibi), 1)), 
+        #     "sdnn": (round(float(sdnn), 1)), 
+        #     "rmssd": (round(float(rmssd), 1)), 
+        #     "pnn20": (round(float(pnn20) * 100, 1)), 
+        #     "pnn50": (round(float(pnn50) * 100, 1)), 
+        #     "hrv": (hrv),
+        #     "rr": (round(float(rr), 2)), 
+        #     "sysbp": (math.floor(sysbp[0, 0])), 
+        #     "diabp": (math.floor(diabp[0,0])), 
+        #     # "spo2": (math.floor(spo2[0 ,0])),
+        #     "vo2max": (round(vo2max, 1)), 
+        #     "si": (round(si, 1)), 
+        #     "mhr": (math.floor(float(mhr))), 
+        #     "hrr": (math.floor(float(hrr))), 
+        #     "thr": (math.floor(float(thr))), 
+        #     "co": (round(float(co), 1)),
+        #     "map": (round(float(map), 1)), 
+        #     "hu": (round(float(hu), 1)), 
+        #     "bv": (bv), 
+        #     "tbw": (float(tbw)), 
+        #     "bwp": (round(float(bwp), 1)), 
+        #     "bmi": (round(float(bmi), 1)), 
+        #     "bf": (round(float(bf), 1)), 
+        #     "asth_risk": round(float(asth_rs),1)
         
-        })
+        # })
         
     
     
@@ -696,42 +702,81 @@ def process_text_file(sessionDirPath):
     filePath = os.path.join(sessionDirPath, fileName)
 
     # Process text data and generate JSON
-    jsonData = {
-            'hr': (math.floor(heart_rate_bpm)),  
-            "ibi": (round(float(ibi), 1)), 
-            "sdnn": (round(float(sdnn), 1)), 
-            "rmssd": (round(float(rmssd), 1)), 
-            "pnn20": (round(float(pnn20) * 100, 1)), 
-            "pnn50": (round(float(pnn50) * 100, 1)), 
-            "hrv": (hrv),
-            "rr": (round(float(rr), 2)), 
-            "sysbp": (math.floor(sysbp[0, 0])), 
-            "diabp": (math.floor(diabp[0,0])), 
-            # "spo2": (math.floor(spo2[0 ,0])),
-            "vo2max": (round(vo2max, 1)), 
-            "si": (round(si, 1)), 
-            "mhr": (math.floor(float(mhr))), 
-            "hrr": (math.floor(float(hrr))), 
-            "thr": (math.floor(float(thr))), 
-            "co": (round(float(co), 1)),
-            "map": (round(float(map), 1)), 
-            "hu": (round(float(hu), 1)), 
-            "bv": round(float(bv)), 
-            "tbw": (float(tbw)), 
-            "bwp": (round(float(bwp), 1)), 
-            "bmi": (round(float(bmi), 1)), 
-            "bf": (round(float(bf), 1)), 
-            "asth_risk": round(float(asth_rs),1)
-        
-        }
     
-    print(f'Writing json file')
+    if isinstance(co, np.ndarray) and isinstance(map, np.ndarray):
+      jsonData = {
+              'hr': (math.floor(heart_rate_bpm)),  
+              "ibi": (round(float(ibi), 1)), 
+              "sdnn": (round(float(sdnn), 1)), 
+              "rmssd": (round(float(rmssd), 1)), 
+              "pnn20": (round(float(pnn20) * 100, 1)), 
+              "pnn50": (round(float(pnn50) * 100, 1)), 
+              "hrv": (hrv),
+              "rr": (round(float(rr), 2)), 
+              "sysbp": (math.floor(sysbp[0, 0])), 
+              "diabp": (math.floor(diabp[0,0])), 
+              # "spo2": (math.floor(spo2[0 ,0])),
+              "vo2max": (round(vo2max, 1)), 
+              "si": (round(si, 1)), 
+              "mhr": (math.floor(float(mhr))), 
+              "hrr": (math.floor(float(hrr))), 
+              "thr": (math.floor(float(thr))), 
+              "co": (round(float(co[0,0]), 1)),
+              "map": (round(float(map[0,0]), 1)), 
+              "hu": (round(float(hu), 1)), 
+              "bv": round(float(bv)), 
+              "tbw": (float(tbw)), 
+              "bwp": (round(float(bwp), 1)), 
+              "bmi": (round(float(bmi), 1)), 
+              "bf": (round(float(bf), 1)), 
+              "asth_risk": round(float(asth_rs),1)
+          
+          }
+      
+      print(f'Writing json file')
 
-    jsonFileName = fileName.replace('.txt', '.json')
-    jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
+      jsonFileName = fileName.replace('.txt', '.json')
+      jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
 
-    with open(jsonFilePath, 'w') as file:
-        json.dump(jsonData, file)
+      with open(jsonFilePath, 'w') as file:
+          json.dump(jsonData, file)
+    else:
+      jsonData = {
+              'hr': (math.floor(heart_rate_bpm)),  
+              "ibi": (round(float(ibi), 1)), 
+              "sdnn": (round(float(sdnn), 1)), 
+              "rmssd": (round(float(rmssd), 1)), 
+              "pnn20": (round(float(pnn20) * 100, 1)), 
+              "pnn50": (round(float(pnn50) * 100, 1)), 
+              "hrv": (hrv),
+              "rr": (round(float(rr), 2)), 
+              "sysbp": (math.floor(sysbp[0, 0])), 
+              "diabp": (math.floor(diabp[0,0])), 
+              # "spo2": (math.floor(spo2[0 ,0])),
+              "vo2max": (round(vo2max, 1)), 
+              "si": (round(si, 1)), 
+              "mhr": (math.floor(float(mhr))), 
+              "hrr": (math.floor(float(hrr))), 
+              "thr": (math.floor(float(thr))), 
+              "co": (round(float(co), 1)),
+              "map": (round(float(map), 1)), 
+              "hu": (round(float(hu), 1)), 
+              "bv": round(float(bv)), 
+              "tbw": (float(tbw)), 
+              "bwp": (round(float(bwp), 1)), 
+              "bmi": (round(float(bmi), 1)), 
+              "bf": (round(float(bf), 1)), 
+              "asth_risk": round(float(asth_rs),1)
+          
+          }
+      
+      print(f'Writing json file')
+
+      jsonFileName = fileName.replace('.txt', '.json')
+      jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
+
+      with open(jsonFilePath, 'w') as file:
+          json.dump(jsonData, file)
 
 if __name__ == "__main__":
     sessionDirPath = sys.argv[1]
