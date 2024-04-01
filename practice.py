@@ -58,7 +58,7 @@ from heartpy.preprocessing import enhance_peaks
 from scipy.signal import butter, filtfilt
 from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import FastICA, PCA
-import PyEMD
+from PyEMD import CEEMDAN
 
 import os
 import cv2
@@ -262,7 +262,7 @@ def filter_respiratory_IMFs(dominant_frequencies, lower_bound=0.1, upper_bound=0
       return respiratory_IMFs_indices
 
 def get_respirate_CEEMDAN_PCA(wave):
-  ceemdan = PyEMD.CEEMDAN(parallel=True, processes=6)
+  ceemdan = CEEMDAN.CEEMDAN(parallel=True, processes=6)
   ceemdan.noise_seed(seed=2009)
   imfs = ceemdan(wave)
   num_imfs, length = imfs.shape
@@ -684,18 +684,44 @@ def process_text_file(sessionDirPath):
         
     
     
-    # filePath = os.path.join(textDir, fileName)
-    # with open(filePath, 'r') as file:
-    #     textData = file.read()
+    fileName = f'./{sessionDirPath}_results.txt'
+    filePath = os.path.join(sessionDirPath, fileName)
 
-    # # Process text data and generate JSON
-    # jsonData = {"status": "success"}
+    # Process text data and generate JSON
+    jsonData = {
+            'hr': (math.floor(heart_rate_bpm)),  
+            "ibi": (round(float(ibi), 1)), 
+            "sdnn": (round(float(sdnn), 1)), 
+            "rmssd": (round(float(rmssd), 1)), 
+            "pnn20": (round(float(pnn20) * 100, 1)), 
+            "pnn50": (round(float(pnn50) * 100, 1)), 
+            "hrv": (hrv),
+            "rr": (round(float(rr), 2)), 
+            "sysbp": (math.floor(sysbp[0, 0])), 
+            "diabp": (math.floor(diabp[0,0])), 
+            # "spo2": (math.floor(spo2[0 ,0])),
+            "vo2max": (round(vo2max, 1)), 
+            "si": (round(si, 1)), 
+            "mhr": (math.floor(float(mhr))), 
+            "hrr": (math.floor(float(hrr))), 
+            "thr": (math.floor(float(thr))), 
+            "co": (round(float(co), 1)),
+            "map": (round(float(map), 1)), 
+            "hu": (round(float(hu), 1)), 
+            "bv": (bv), 
+            "tbw": (float(tbw)), 
+            "bwp": (round(float(bwp), 1)), 
+            "bmi": (round(float(bmi), 1)), 
+            "bf": (round(float(bf), 1)), 
+            "asth_risk": round(float(asth_rs),1)
+        
+        }
 
-    # jsonFileName = fileName.replace('.txt', '.json')
-    # jsonFilePath = os.path.join(textDir, jsonFileName)
+    jsonFileName = fileName.replace('.txt', '.json')
+    jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
 
-    # with open(jsonFilePath, 'w') as file:
-    #     json.dump(jsonData, file)
+    with open(jsonFilePath, 'w') as file:
+        json.dump(jsonData, file)
 
 if __name__ == "__main__":
     sessionDirPath = sys.argv[1]

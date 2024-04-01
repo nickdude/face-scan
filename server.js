@@ -213,19 +213,19 @@ io.on("connection", (socket) => {
 
             console.log(`Python output: ${stdout}`);
 
-            // // Read and emit JSON data
-            // const jsonFilePath = path.join(
-            //   textDir,
-            //   fileName.replace(".txt", ".json")
-            // );
-            // fs.readFile(jsonFilePath, "utf8", (err, jsonData) => {
-            //   if (err) {
-            //     console.error("Error reading JSON data:", err);
-            //     return;
-            //   }
+            // Read and emit JSON data
+            const jsonFilePath = path.join(
+              directoryPath,
+              `${socket.id}_results.json`
+            );
+            fs.readFile(jsonFilePath, "utf8", (err, jsonData) => {
+              if (err) {
+                console.error("Error reading JSON data:", err);
+                return;
+              }
 
-            //   socket.emit("json", jsonData);
-            // });
+              socket.emit("results", jsonData);
+            });
           });
 
           stringCounter = 0; // Reset the string counter after processing
