@@ -206,7 +206,7 @@ io.on("connection", (socket) => {
         //     }
         // })
 
-        if (stringCounter === 800) {
+        if (stringCounter === 900) {
           console.log("Executing python code");
 
           // Execute Python script
