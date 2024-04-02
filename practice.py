@@ -126,19 +126,15 @@ def calc_hr_rr(wave,sampling_rate=26):
 
 
 def pred_adv(wave):
-  try:
-    global model_bp, model_spo2
-    bp_signal = wave
-    t1=bp_signal[0:875].reshape(1,875,1)
-    sys,di=model_bp.predict(t1)
-    sp_signal = wave
-    t1=sp_signal[0:156].reshape(1,156,1)
-    pred=model_spo2.predict(t1)
-    pred = min([[99.998]],pred)
-    return sys,di,pred
-  except:
-    return np.array([[115]]), np.array([[85]]), np.array([[98]])
-    
+  global model_bp, model_spo2
+  bp_signal = wave
+  t1=bp_signal[0:875].reshape(1,875,1)
+  sys,di=model_bp.predict(t1)
+  sp_signal = wave
+  t1=sp_signal[0:156].reshape(1,156,1)
+  pred=model_spo2.predict(t1)
+  pred = min([[99.998]],pred)
+  return sys,di,pred
 
 
 
@@ -707,79 +703,161 @@ def process_text_file(sessionDirPath):
     # Process text data and generate JSON
     
     if isinstance(co, np.ndarray) and isinstance(map, np.ndarray):
-      jsonData = {
-              'hr': (math.floor(heart_rate_bpm)),  
-              "ibi": (round(float(ibi), 1)), 
-              "sdnn": (round(float(sdnn), 1)), 
-              "rmssd": (round(float(rmssd), 1)), 
-              "pnn20": (round(float(pnn20) * 100, 1)), 
-              "pnn50": (round(float(pnn50) * 100, 1)), 
-              "hrv": (hrv),
-              "rr": (round(float(rr), 2)), 
-              "sysbp": (math.floor(sysbp[0, 0])), 
-              "diabp": (math.floor(diabp[0,0])), 
-              # "spo2": (math.floor(spo2[0 ,0])),
-              "vo2max": (round(vo2max, 1)), 
-              "si": (round(si, 1)), 
-              "mhr": (math.floor(float(mhr))), 
-              "hrr": (math.floor(float(hrr))), 
-              "thr": (math.floor(float(thr))), 
-              "co": (round(float(co[0,0]), 1)),
-              "map": (round(float(map[0,0]), 1)), 
-              "hu": (round(float(hu), 1)), 
-              "bv": round(float(bv)), 
-              "tbw": (float(tbw)), 
-              "bwp": (round(float(bwp), 1)), 
-              "bmi": (round(float(bmi), 1)), 
-              "bf": (round(float(bf), 1)), 
-              "asth_risk": round(float(asth_rs),1)
-          
-          }
       
-      print(f'Writing json file')
+      if isinstance(spo2, np.ndarray):
+        jsonData = {
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi), 1)), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2[0 ,0])),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co[0,0]), 1)),
+                "map": (round(float(map[0,0]), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": round(float(bv)), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+                "asth_risk": round(float(asth_rs),1)
+            
+            }
+        
+        print(f'Writing json file')
 
-      jsonFileName = fileName.replace('.txt', '.json')
-      jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
+        jsonFileName = fileName.replace('.txt', '.json')
+        jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
 
-      with open(jsonFilePath, 'w') as file:
-          json.dump(jsonData, file)
+        with open(jsonFilePath, 'w') as file:
+            json.dump(jsonData, file)
+            
+      else:
+        jsonData = {
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi), 1)), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2)),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co[0,0]), 1)),
+                "map": (round(float(map[0,0]), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": round(float(bv)), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+                "asth_risk": round(float(asth_rs),1)
+            
+            }
+        
+        print(f'Writing json file')
+
+        jsonFileName = fileName.replace('.txt', '.json')
+        jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
+
+        with open(jsonFilePath, 'w') as file:
+            json.dump(jsonData, file)
     else:
-      jsonData = {
-              'hr': (math.floor(heart_rate_bpm)),  
-              "ibi": (round(float(ibi), 1)), 
-              "sdnn": (round(float(sdnn), 1)), 
-              "rmssd": (round(float(rmssd), 1)), 
-              "pnn20": (round(float(pnn20) * 100, 1)), 
-              "pnn50": (round(float(pnn50) * 100, 1)), 
-              "hrv": (hrv),
-              "rr": (round(float(rr), 2)), 
-              "sysbp": (math.floor(sysbp[0, 0])), 
-              "diabp": (math.floor(diabp[0,0])), 
-              # "spo2": (math.floor(spo2[0 ,0])),
-              "vo2max": (round(vo2max, 1)), 
-              "si": (round(si, 1)), 
-              "mhr": (math.floor(float(mhr))), 
-              "hrr": (math.floor(float(hrr))), 
-              "thr": (math.floor(float(thr))), 
-              "co": (round(float(co), 1)),
-              "map": (round(float(map), 1)), 
-              "hu": (round(float(hu), 1)), 
-              "bv": round(float(bv)), 
-              "tbw": (float(tbw)), 
-              "bwp": (round(float(bwp), 1)), 
-              "bmi": (round(float(bmi), 1)), 
-              "bf": (round(float(bf), 1)), 
-              "asth_risk": round(float(asth_rs),1)
-          
-          }
       
-      print(f'Writing json file')
+      if isinstance(spo2, np.ndarray):
+        
+        jsonData = {
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi), 1)), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2[0 ,0])),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co), 1)),
+                "map": (round(float(map), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": round(float(bv)), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+                "asth_risk": round(float(asth_rs),1)
+            
+            }
+        
+        print(f'Writing json file')
 
-      jsonFileName = fileName.replace('.txt', '.json')
-      jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
+        jsonFileName = fileName.replace('.txt', '.json')
+        jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
 
-      with open(jsonFilePath, 'w') as file:
-          json.dump(jsonData, file)
+        with open(jsonFilePath, 'w') as file:
+            json.dump(jsonData, file)
+            
+      else:
+        jsonData = {
+                'hr': (math.floor(heart_rate_bpm)),  
+                "ibi": (round(float(ibi), 1)), 
+                "sdnn": (round(float(sdnn), 1)), 
+                "rmssd": (round(float(rmssd), 1)), 
+                "pnn20": (round(float(pnn20) * 100, 1)), 
+                "pnn50": (round(float(pnn50) * 100, 1)), 
+                "hrv": (hrv),
+                "rr": (round(float(rr), 2)), 
+                "sysbp": (math.floor(sysbp[0, 0])), 
+                "diabp": (math.floor(diabp[0,0])), 
+                "spo2": (math.floor(spo2)),
+                "vo2max": (round(vo2max, 1)), 
+                "si": (round(si, 1)), 
+                "mhr": (math.floor(float(mhr))), 
+                "hrr": (math.floor(float(hrr))), 
+                "thr": (math.floor(float(thr))), 
+                "co": (round(float(co), 1)),
+                "map": (round(float(map), 1)), 
+                "hu": (round(float(hu), 1)), 
+                "bv": round(float(bv)), 
+                "tbw": (float(tbw)), 
+                "bwp": (round(float(bwp), 1)), 
+                "bmi": (round(float(bmi), 1)), 
+                "bf": (round(float(bf), 1)), 
+                "asth_risk": round(float(asth_rs),1)
+            
+            }
+        
+        print(f'Writing json file')
+
+        jsonFileName = fileName.replace('.txt', '.json')
+        jsonFilePath = os.path.join(sessionDirPath, jsonFileName)
+
+        with open(jsonFilePath, 'w') as file:
+            json.dump(jsonData, file)
+        
 
 if __name__ == "__main__":
     sessionDirPath = sys.argv[1]
