@@ -253,6 +253,7 @@ io.on("connection", (socket) => {
 
               console.log(parsedData)
 
+              socket.emit("results", parsedData)
             });
           });
           stringCounter = 0; // Reset the string counter after processing
