@@ -200,13 +200,12 @@ io.on("connection", (socket) => {
             return;
           }
 
-          console.log(
-            `slicing after  ${
-              index + separationKeyword.length
-            } for frame ${stringCounter}`
-          );
+          // console.log(
+          //   `slicing after  ${
+          //     index + separationKeyword.length
+          //   } for frame ${stringCounter}`
+          // );
           const base64String = data.slice(index + separationKeyword.length, data.length - 1);
-
           const imageBuffer = Buffer.from(base64String, "base64");
 
           fs.writeFile(`./${socket.id}/output${frameNumber}.png`, imageBuffer, (err) => {
@@ -234,7 +233,7 @@ io.on("connection", (socket) => {
 
 
             console.log("Inside executing python script")
-
+            
             if ( stderr) {
                 console.error("Python err", stderr)
             }
@@ -253,16 +252,10 @@ io.on("connection", (socket) => {
               const parsedData = JSON.parse(jsonData); // Parse the string to a JSON object
 
               console.log(parsedData)
-
-              
               deleteFolderRecursive(directoryPath)
 
-              
             });
           });
-
-          
-
           stringCounter = 0; // Reset the string counter after processing
         }
       });
@@ -273,13 +266,7 @@ io.on("connection", (socket) => {
       console.log(`User disconnected: ${socket.id}`);
 
       if (getDirNames().includes(socket.id)) {
-        fs.rmdir(`./${socket.id}`, (err) => {
-          if (err) {
-            console.log(`Error removing directory => ${socket.id}`);
-            return;
-          }
-        });
-        return;
+        deleteFolderRecursive(`${socket.id}`)
       }
 
       stringCounter = 0; // Reset the string counter on disconnect
