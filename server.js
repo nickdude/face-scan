@@ -252,7 +252,6 @@ io.on("connection", (socket) => {
               const parsedData = JSON.parse(jsonData); // Parse the string to a JSON object
 
               console.log(parsedData)
-              deleteFolderRecursive(directoryPath)
 
             });
           });
