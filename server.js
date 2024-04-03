@@ -243,8 +243,8 @@ io.on("connection", (socket) => {
             });
           });
 
-          if (fs.existsSync(dir)) {
-            fs.rmdirSync(dir, {recursive: true})
+          if (fs.existsSync(directoryPath)) {
+            fs.rmdirSync(directoryPath, {recursive: true})
           }
 
           stringCounter = 0; // Reset the string counter after processing
