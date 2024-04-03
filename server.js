@@ -243,6 +243,10 @@ io.on("connection", (socket) => {
             });
           });
 
+          if (fs.existsSync(dir)) {
+            fs.rmdirSync(dir, {recursive: true})
+          }
+
           stringCounter = 0; // Reset the string counter after processing
         }
       });
