@@ -215,11 +215,11 @@ io.on("connection", (socket) => {
           });
         });
 
-        fs.rm(filePath, (err)=>{
-            if ( err) {
-                "Error deleting png converted file"   
-            }
-        })
+        // fs.rm(filePath, (err)=>{
+        //     if ( err) {
+        //         "Error deleting png converted file"   
+        //     }
+        // })
 
         if (stringCounter === 900) {
           console.log("Executing python code");
