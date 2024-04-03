@@ -266,6 +266,7 @@ io.on("connection", (socket) => {
       console.log(`User disconnected: ${socket.id}`);
 
       if (getDirNames().includes(socket.id)) {
+        console.log(`Attempting to delete session directory => ${socket.id}`)
         deleteFolderRecursive(`${socket.id}`)
       }
 
