@@ -93,6 +93,21 @@ const io = socketIO(server);
 
 // utility functions
 
+
+var deleteFolderRecursive = function(path) {
+  if( fs.existsSync(path) ) {
+    fs.readdirSync(path).forEach(function(file,index){
+      var curPath = path + "/" + file;
+      if(fs.lstatSync(curPath).isDirectory()) { // recurse
+        deleteFolderRecursive(curPath);
+      } else { // delete file
+        fs.unlinkSync(curPath);
+      }
+    });
+    fs.rmdirSync(path);
+  }
+};
+
 const separationKeyword = "faceScanImageSeparationIdentifier";
 
 const getDirNames = () => {
@@ -200,11 +215,11 @@ io.on("connection", (socket) => {
           });
         });
 
-        // fs.rm(filePath, (err)=>{
-        //     if ( err) {
-        //         "Error deleting png converted file"   
-        //     }
-        // })
+        fs.rm(filePath, (err)=>{
+            if ( err) {
+                "Error deleting png converted file"   
+            }
+        })
 
         if (stringCounter === 900) {
           console.log("Executing python code");
@@ -239,13 +254,14 @@ io.on("connection", (socket) => {
 
               console.log(parsedData)
 
-              socket.emit("results", parsedData);
+              
+              deleteFolderRecursive(directoryPath)
+
+              
             });
           });
 
-          if (fs.existsSync(directoryPath)) {
-            fs.rmdirSync(directoryPath, {recursive: true})
-          }
+          
 
           stringCounter = 0; // Reset the string counter after processing
         }
