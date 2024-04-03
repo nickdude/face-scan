@@ -93,14 +93,15 @@ const io = socketIO(server);
 
 // utility functions
 
-
-var deleteFolderRecursive = function(path) {
-  if( fs.existsSync(path) ) {
-    fs.readdirSync(path).forEach(function(file,index){
+var deleteFolderRecursive = function (path) {
+  if (fs.existsSync(path)) {
+    fs.readdirSync(path).forEach(function (file, index) {
       var curPath = path + "/" + file;
-      if(fs.lstatSync(curPath).isDirectory()) { // recurse
+      if (fs.lstatSync(curPath).isDirectory()) {
+        // recurse
         deleteFolderRecursive(curPath);
-      } else { // delete file
+      } else {
+        // delete file
         fs.unlinkSync(curPath);
       }
     });
@@ -170,8 +171,7 @@ io.on("connection", (socket) => {
     let textData = "";
 
     socket.on("message", (data) => {
-
-      socket.emit("message_received")
+      socket.emit("message_received");
       textData = "";
       textData += data + "\n"; // Append the received string and a newline character
       stringCounter++;
@@ -205,18 +205,25 @@ io.on("connection", (socket) => {
           //     index + separationKeyword.length
           //   } for frame ${stringCounter}`
           // );
-          const base64String = data.slice(index + separationKeyword.length, data.length - 1);
+          const base64String = data.slice(
+            index + separationKeyword.length,
+            data.length - 1
+          );
           const imageBuffer = Buffer.from(base64String, "base64");
 
-          fs.writeFile(`./${socket.id}/output${frameNumber}.png`, imageBuffer, (err) => {
-            if (err) throw err;
-            console.log("The file has been saved!");
-          });
+          fs.writeFile(
+            `./${socket.id}/output${frameNumber}.png`,
+            imageBuffer,
+            (err) => {
+              if (err) throw err;
+              console.log("The file has been saved!");
+            }
+          );
         });
 
         // fs.rm(filePath, (err)=>{
         //     if ( err) {
-        //         "Error deleting png converted file"   
+        //         "Error deleting png converted file"
         //     }
         // })
 
@@ -231,11 +238,10 @@ io.on("connection", (socket) => {
               return;
             }
 
+            console.log("Inside executing python script");
 
-            console.log("Inside executing python script")
-            
-            if ( stderr) {
-                console.error("Python err", stderr)
+            if (stderr) {
+              console.error("Python err", stderr);
             }
             console.log(`Python output: ${stdout}`);
 
@@ -251,23 +257,33 @@ io.on("connection", (socket) => {
               }
               const parsedData = JSON.parse(jsonData); // Parse the string to a JSON object
 
-              console.log(parsedData)
+              console.log(parsedData);
 
-              socket.emit("results", parsedData)
+              socket.emit("results", parsedData);
             });
           });
           stringCounter = 0; // Reset the string counter after processing
         }
       });
-
     });
 
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}`);
 
-      if (getDirNames().includes(socket.id)) {
-        console.log(`Attempting to delete session directory => ${socket.id}`)
-        deleteFolderRecursive(`${socket.id}`)
+      // delete client session directory
+      const currentDirectory = ".";
+      const directories = fs.readdirSync(currentDirectory).filter((item) => {
+        return fs.statSync(path.join(currentDirectory, item)).isDirectory();
+      });
+
+      const dirToDelete = `${socket.id}`;
+      if (directories.includes(dirToDelete)) {
+        console.log(`Deleting client session directory => ${socket.id}`);
+        fs.rmSync(dirToDelete, (err) => {
+          if (err) {
+            console.log(`Error deleting dir => ${socket.id}`);
+          }
+        });
       }
 
       stringCounter = 0; // Reset the string counter on disconnect
