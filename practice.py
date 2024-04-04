@@ -1571,6 +1571,13 @@ def receive_list():
                 wave2 = POS_WANG2(frames, sampling_rate)
                 asth_rs = get_asthama_riskscore(wave2)
                 
+                if ( sysbp < 80 or sysbp > 170 ):
+                  sysbp = "N/A"
+                
+                
+                if (diabp < 50 or diabp > 140):
+                  diabp = "N/A"
+                
                 
                 print({
                     'hr': (math.floor(heart_rate_bpm)),  
