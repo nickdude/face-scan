@@ -1665,7 +1665,7 @@ def receive_list():
                           "rr": (round(float(rr), 2)), 
                           "sysbp": (math.floor(sysbp[0, 0])), 
                           "diabp": (math.floor(diabp[0,0])), 
-                          "spo2": (98),
+                          "spo2": (math.floor(spo2[0][0])),
                           "vo2max": (round(vo2max, 1)), 
                           "si": (round(si, 1)), 
                           "mhr": (math.floor(float(mhr))), 
