@@ -1620,7 +1620,7 @@ def receive_list():
                 #         print(f'Failed to remove client directory -> {userSessionUID}')
                 
                 
-                if isinstance(spo2, np.ndarray) or isinstance(spo2, list):
+                if isinstance(spo2, np.ndarray):
                   
                   return json.dumps(
                       {
@@ -1652,6 +1652,38 @@ def receive_list():
                       
                       }
                 )
+                elif isinstance(spo2, list):
+                  return json.dumps(
+                      {
+                          'hr': (math.floor(heart_rate_bpm)),  
+                          "ibi": (round(float(ibi)), 1), 
+                          "sdnn": (round(float(sdnn), 1)), 
+                          "rmssd": (round(float(rmssd), 1)), 
+                          "pnn20": (round(float(pnn20) * 100, 1)), 
+                          "pnn50": (round(float(pnn50) * 100, 1)), 
+                          "hrv": (hrv),
+                          "rr": (round(float(rr), 2)), 
+                          "sysbp": (math.floor(sysbp[0, 0])), 
+                          "diabp": (math.floor(diabp[0,0])), 
+                          "spo2": (math.floor(spo2[0])),
+                          "vo2max": (round(vo2max, 1)), 
+                          "si": (round(si, 1)), 
+                          "mhr": (math.floor(float(mhr))), 
+                          "hrr": (math.floor(float(hrr))), 
+                          "thr": (math.floor(float(thr))), 
+                          "co": (round(float(co), 1)),
+                          "map": (round(float(map), 1)), 
+                          "hu": (round(float(hu), 1)), 
+                          "bv": (bv), 
+                          "tbw": (float(tbw)), 
+                          "bwp": (round(float(bwp), 1)), 
+                          "bmi": (round(float(bmi), 1)), 
+                          "bf": (round(float(bf), 1)), 
+                          "asth_risk": round(float(asth_rs),1)
+                      
+                      }
+                )
+                  
                   
                 else:
                   return json.dumps(
