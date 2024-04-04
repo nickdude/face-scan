@@ -1613,7 +1613,7 @@ def receive_list():
                 #         print(f'Failed to remove client directory -> {userSessionUID}')
                 
                 
-                if isinstance(spo2, np.ndarray):
+                if isinstance(spo2, np.ndarray) or isinstance(spo2, list):
                   
                   return json.dumps(
                       {
