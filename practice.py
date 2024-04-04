@@ -1604,13 +1604,13 @@ def receive_list():
                 
                 print(f'SPO2 is {spo2} and type is {spo2}')
                 
-                # if client session directory in folder, deleted, else skip
-                if userSessionUID in os.listdir('./'):
-                    try:
-                        shutil.rmtree(f'./{userSessionUID}')
-                        print(f'Client directory removed successfully -> {userSessionUID}')
-                    except:
-                        print(f'Failed to remove client directory -> {userSessionUID}')
+                # # if client session directory in folder, deleted, else skip
+                # if userSessionUID in os.listdir('./'):
+                #     try:
+                #         shutil.rmtree(f'./{userSessionUID}')
+                #         print(f'Client directory removed successfully -> {userSessionUID}')
+                #     except:
+                #         print(f'Failed to remove client directory -> {userSessionUID}')
                 
                 
                 if isinstance(spo2, np.ndarray):
@@ -1683,13 +1683,13 @@ def receive_list():
         except Exception as e:
             print(traceback.format_exc())
             
-            # if client session directory in folder, deleted, else skip
-            if userSessionUID in os.listdir('./'):
-                try:
-                    shutil.rmtree(f'./{userSessionUID}')
-                    print(f'Client directory removed successfully -> {userSessionUID}')
-                except:
-                    print(f'Failed to remove client directory -> {userSessionUID}')
+            # # if client session directory in folder, deleted, else skip
+            # if userSessionUID in os.listdir('./'):
+            #     try:
+            #         shutil.rmtree(f'./{userSessionUID}')
+            #         print(f'Client directory removed successfully -> {userSessionUID}')
+            #     except:
+            #         print(f'Failed to remove client directory -> {userSessionUID}')
             return json.dumps({"opcode": 500})
     else:
         return jsonify({"error": "Only POST requests are allowed"}), 405
