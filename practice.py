@@ -1553,7 +1553,7 @@ def receive_list():
                 _, frames = get_ROI(frames)
 
                 sampling_rate = 30
-                wave = POS_WANG2(frames, sampling_rate)
+                wave = POS_WANG(frames, sampling_rate)
 
                 heart_rate_bpm = calc_hr_rr(wave, sampling_rate=sampling_rate)
                 ibi, sdnn, rmssd, pnn20, pnn50, hrv, rr = calc_hp_metrics(wave,sampling_rate=30)
